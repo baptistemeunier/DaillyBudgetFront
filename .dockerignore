@@ -1,0 +1,14 @@
+node_modules
+.nuxt
+.output
+.data
+.nitro
+.cache
+.idea
+.claude
+docs
+Dockerfile
+.dockerignore
+.env
+.env.*
+*.md
