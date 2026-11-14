@@ -81,3 +81,21 @@ export interface Bank extends HalResource {
   logo: string | null
   countries: string[]
 }
+
+export type UserActionType =
+  | 'CONNECTION_EXPIRED'
+  | 'CONNECTION_TO_CONFIGURE'
+  | 'CONNECTION_EXPIRING'
+  | 'TRANSACTIONS_TO_CATEGORIZE'
+
+/** Something the user has to deal with, from GET /user_actions (sorted by priority). */
+export interface UserAction extends HalResource {
+  id: string
+  type: UserActionType
+  priority: number
+  /** End of the bank access (connection actions). */
+  expiresAt: string | null
+  /** Number of transactions to categorize. */
+  count: number | null
+  _links: HalResource['_links'] & { accountConnection?: HalLink; 'account-connection'?: HalLink; bank?: HalLink }
+}

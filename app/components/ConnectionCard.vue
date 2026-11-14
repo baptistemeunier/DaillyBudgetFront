@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ExternalLink } from 'lucide-vue-next'
+import { ChevronDown, ExternalLink, Loader2, Trash2 } from 'lucide-vue-next'
 import type { AccountConnection } from '~/types/api'
 
 const props = defineProps<{ connection: AccountConnection }>()
@@ -14,6 +14,33 @@ const bankName = computed(() => bank.value?.name ?? 'Banque')
 const expired = computed(() => ['EX', 'SU'].includes(props.connection.externalStatus))
 const configureHref = computed(() => props.connection._links.configure?.href)
 const logoFailed = ref(false)
+
+// Expired access can't be renewed: start a new connection to the same bank.
+const reconnect = useReconnectBank()
+function startReconnect() {
+  if (bank.value) reconnect.start(bank.value.id)
+}
+
+// A linked or expired connection without any account is useless: offer to remove it.
+const removable = computed(
+  () => ['LN', 'EX'].includes(props.connection.externalStatus) && !accountsPending.value && !accounts.value?.length,
+)
+const remove = useDeleteConnection()
+const removeOpen = ref(false)
+function startRemove() {
+  if (remove.isPending.value) return
+  remove.reset()
+  removeOpen.value = true
+}
+async function confirmRemove() {
+  if (remove.isPending.value) return
+  try {
+    await remove.mutateAsync(props.connection)
+    removeOpen.value = false
+  } catch {
+    // remove.isError drives the message in the dialog
+  }
+}
 
 const subtitle = computed(() => {
   if (accountsPending.value) return 'Chargement…'
@@ -71,15 +98,28 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
         <span>La connexion n'est pas finalisée.</span>
         <a
           :href="configureHref"
-          class="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-full bg-amber-600 px-4 font-semibold text-white"
+          class="inline-flex h-7 flex-none items-center gap-1 rounded-full bg-amber-600 px-2.5 text-xs font-semibold text-white"
         >
-          Finaliser <ExternalLink class="size-4" aria-hidden="true" />
+          Finaliser <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
       </div>
 
-      <p v-if="expired" class="bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
-        L'accès bancaire a expiré. Soldes figés au {{ new Date(connection.updatedAt).toLocaleDateString('fr-FR') }}.
-      </p>
+      <div v-if="expired" class="flex items-center justify-between gap-3 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
+        <span>
+          L'accès bancaire a expiré. Soldes figés au {{ new Date(connection.updatedAt).toLocaleDateString('fr-FR') }}.
+          <span v-if="reconnect.isError.value" class="block font-semibold">La reconnexion a échoué, réessayez.</span>
+        </span>
+        <button
+          type="button"
+          class="inline-flex h-7 flex-none items-center gap-1 rounded-full bg-rose-600 px-2.5 text-xs font-semibold text-white disabled:opacity-60"
+          :disabled="!bank || reconnect.isPending.value"
+          @click="startReconnect"
+        >
+          Reconnecter
+          <Loader2 v-if="reconnect.isPending.value" class="size-3.5 animate-spin" aria-hidden="true" />
+          <ExternalLink v-else class="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
 
       <div v-if="accountsPending" class="flex flex-col gap-2 py-3 pr-4 pl-[68px]" aria-hidden="true">
         <div class="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
@@ -91,13 +131,40 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
         <button type="button" class="min-h-11 font-semibold text-indigo-700" @click="refetch()">Réessayer</button>
       </div>
 
-      <p v-else-if="!accounts?.length" class="py-3 pr-4 pl-[68px] text-[13px] text-slate-500">
-        Aucun compte pour cette connexion.
-      </p>
+      <div v-else-if="!accounts?.length" class="flex items-center justify-between gap-3 py-3 pr-4 pl-[68px] text-[13px]">
+        <span class="text-slate-500">
+          Aucun compte pour cette connexion.
+          <span v-if="remove.isError.value" class="block font-semibold text-rose-800">La suppression a échoué, réessayez.</span>
+        </span>
+        <button
+          v-if="removable"
+          type="button"
+          class="inline-flex h-7 flex-none items-center gap-1 rounded-full bg-slate-700 px-2.5 text-xs font-semibold text-white disabled:opacity-60"
+          :disabled="remove.isPending.value"
+          @click="startRemove"
+        >
+          Supprimer
+          <Loader2 v-if="remove.isPending.value" class="size-3.5 animate-spin" aria-hidden="true" />
+          <Trash2 v-else class="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
 
       <div v-else class="divide-y divide-slate-100">
         <AccountRow v-for="account in accounts" :key="account._links.self.href" :account="account" :muted="expired" indent />
       </div>
     </div>
+
+    <ConfirmDialog
+      v-model:open="removeOpen"
+      :title="`Supprimer ${bankName} ?`"
+      confirm-label="Supprimer"
+      tone="danger"
+      :icon="Trash2"
+      :pending="remove.isPending.value"
+      :error="remove.isError.value ? 'La suppression a échoué, réessayez.' : null"
+      @confirm="confirmRemove"
+    >
+      <p>Cette connexion ne contient aucun compte. Elle sera retirée de votre liste.</p>
+    </ConfirmDialog>
   </article>
 </template>

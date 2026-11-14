@@ -52,6 +52,8 @@ const setOpen = (id: string, value: boolean) => {
       <h1 class="text-2xl font-bold">Mes comptes</h1>
     </header>
 
+    <TodoCarousel />
+
     <section class="flex flex-col gap-3" aria-labelledby="banks-title">
       <h2 id="banks-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
         Banques connectées

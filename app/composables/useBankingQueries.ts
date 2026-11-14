@@ -1,11 +1,20 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, Bank, Category, HalCollection, Transaction } from '~/types/api'
+import type { Account, AccountConnection, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
 
 export function useConnectionsQuery() {
   const api = useApi()
   return useQuery({
     queryKey: ['account_connections'],
     queryFn: async () => halItems(await api<HalCollection<AccountConnection>>('/account_connections')),
+  })
+}
+
+/** What the user has to do (expired banks, transactions to categorize…), highest priority first. */
+export function useUserActionsQuery() {
+  const api = useApi()
+  return useQuery({
+    queryKey: ['user_actions'],
+    queryFn: async () => halItems(await api<HalCollection<UserAction>>('/user_actions')),
   })
 }
 
@@ -95,6 +104,23 @@ export function useCreateConnection() {
   })
 }
 
+/** Expired access can't be renewed: start a new connection to the same bank and go to its consent page. */
+export function useReconnectBank() {
+  const create = useCreateConnection()
+  async function start(bankId: string) {
+    if (create.isPending.value) return
+    try {
+      const connection = await create.mutateAsync(bankId)
+      const href = connection._links.configure?.href
+      if (!href) throw new Error('Lien de consentement absent')
+      window.location.assign(href)
+    } catch {
+      // isError drives the caller's message
+    }
+  }
+  return { start, isPending: create.isPending, isError: create.isError }
+}
+
 export function useSyncConnection() {
   const api = useApi()
   const queryClient = useQueryClient()
@@ -105,7 +131,22 @@ export function useSyncConnection() {
         body: {},
         headers: { 'Content-Type': 'application/merge-patch+json' },
       }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['account_connections'] }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['account_connections'] })
+      queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+    },
+  })
+}
+
+export function useDeleteConnection() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (connection: AccountConnection) => api(connection._links.self.href, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account_connections'] })
+      queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+    },
   })
 }
 
@@ -161,6 +202,7 @@ export function useUpdateSplits(accountId: MaybeRefOrGetter<string>) {
         headers: { 'Content-Type': 'application/merge-patch+json' },
       }),
     onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['user_actions'] })
       queryClient.setQueryData<InfiniteData<HalCollection<Transaction>>>(
         ['transactions', toValue(accountId)],
         (data) =>
