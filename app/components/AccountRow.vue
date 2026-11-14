@@ -31,7 +31,7 @@ const balance = computed(() =>
   >
     <slot name="leading" />
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span class="truncate text-[15px] font-medium">{{ account.name ?? 'Compte' }}</span>
+      <span class="truncate text-[15px] font-medium">{{ accountName(account) }}</span>
       <span class="flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
         {{ maskIban(account.iban) }}
         <span v-if="note">· {{ note }}</span>

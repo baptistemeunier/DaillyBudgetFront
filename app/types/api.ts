@@ -28,6 +28,7 @@ export interface AccountConnection extends HalResource {
 
 export interface Account extends HalResource {
   name: string | null
+  displayName: string | null
   iban: string | null
   externalId: string
   externalStatus: string | null

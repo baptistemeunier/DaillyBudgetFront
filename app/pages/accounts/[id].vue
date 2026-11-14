@@ -122,7 +122,7 @@ function back() {
         </button>
         <div class="flex min-w-0 flex-col">
           <h1 class="truncate text-lg font-bold">
-            <span v-if="account">{{ account.name ?? 'Compte' }}</span>
+            <span v-if="account">{{ accountName(account) }}</span>
             <span v-else class="inline-block h-5 w-40 animate-pulse rounded bg-slate-100 align-middle" />
           </h1>
           <p class="truncate text-[13px] text-slate-500">
