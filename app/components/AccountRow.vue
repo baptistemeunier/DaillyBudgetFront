@@ -17,8 +17,8 @@ const syncing = computed(
 )
 
 const balance = computed(() =>
-  props.account.balanceAmount != null
-    ? formatCents(toCents(props.account.balanceAmount), props.account.balanceCurrency ?? 'EUR')
+  props.account.balance != null
+    ? formatCents(toCents(props.account.balance), props.account.balanceCurrency ?? 'EUR')
     : null,
 )
 </script>

@@ -35,9 +35,13 @@ export interface Account extends HalResource {
   externalUpdatedAt: string | null
   synchronizedStatus: AccountSyncStatus | null
   synchronizedAt: string | null
-  // Not exposed by the API yet (handoff §6.1)
-  balanceAmount?: string | null
-  balanceCurrency?: string | null
+  /** Balance reported by the bank at the last sync (decimal string), null before the first one. */
+  balance: string | null
+  balanceCurrency: string | null
+  /** Bank balance kind (e.g. "interimAvailable", "closingBooked"). */
+  balanceType: string | null
+  /** Date the bank reports the balance for. */
+  balanceAt: string | null
   _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink }
 }
 

@@ -32,8 +32,8 @@ watch(syncing, (now, before) => {
 const selected = ref<Transaction | null>(null)
 
 const balance = computed(() =>
-  account.value?.balanceAmount != null
-    ? formatCents(toCents(account.value.balanceAmount), account.value.balanceCurrency ?? 'EUR')
+  account.value?.balance != null
+    ? formatCents(toCents(account.value.balance), account.value.balanceCurrency ?? 'EUR')
     : null,
 )
 
@@ -82,7 +82,9 @@ function back() {
 
       <div v-else class="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
         <div v-if="balance">
-          <p class="text-[13px] text-slate-500">Solde</p>
+          <p class="text-[13px] text-slate-500">
+            Solde<template v-if="account?.balanceAt"> · {{ dayLabel(dayKey(account.balanceAt)) }}</template>
+          </p>
           <p class="text-[28px] leading-tight font-bold tabular-nums">{{ balance }}</p>
         </div>
         <p v-if="syncing" class="flex items-center gap-1.5 text-[13px] font-medium text-indigo-700">
