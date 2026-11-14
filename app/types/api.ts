@@ -99,3 +99,20 @@ export interface UserAction extends HalResource {
   count: number | null
   _links: HalResource['_links'] & { accountConnection?: HalLink; 'account-connection'?: HalLink; bank?: HalLink }
 }
+
+/** Root expense category + amount. Same HAL rendering as a split: read the IRI with splitCategoryIri(). */
+export type BudgetLine = TransactionSplit
+
+export interface BudgetLineInput {
+  category: string // IRI
+  amount: string
+}
+
+/** Monthly budget of the user (one per user), split across root expense categories. */
+export interface Budget extends HalResource {
+  amount: string
+  currency: string
+  lines: BudgetLine[]
+  allocatedAmount?: string | null
+  unallocatedAmount?: string | null
+}

@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       // Overridden by NUXT_PUBLIC_*
       oauthClientId: '',
       oauthAuthorizeUrl: 'https://auth.meunier.ovh/oauth/authorize',
-      oauthScope: 'account_connection:write account:write category:write',
+      oauthScope: 'account_connection:write account:write category:write budget:write',
       apiMocking: false,
     },
   },

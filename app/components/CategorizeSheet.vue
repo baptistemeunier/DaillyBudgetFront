@@ -62,22 +62,7 @@ const currentIris = computed(() =>
   (t.value?.splits ?? []).map(splitCategoryIri).filter((i): i is string => !!i),
 )
 
-/** "12,5" -> 1250 ; invalid -> null. */
-function parseInput(input: string): number | null {
-  const v = input.trim().replace(/\s/g, '').replace(',', '.')
-  if (!/^\d+(\.\d{0,2})?$/.test(v)) return null
-  return toCents(v)
-}
-
-function centsToInput(cents: number): string {
-  return (cents / 100).toFixed(2).replace('.', ',')
-}
-
-/** Signed API decimal without float maths: -1250 -> "-12.50". */
-function centsToDecimal(cents: number): string {
-  const abs = Math.abs(cents)
-  return `${cents < 0 ? '-' : ''}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`
-}
+const parseInput = parseAmountInput
 
 const allocated = computed(() => lines.value.reduce((sum, l) => sum + (parseInput(l.input) ?? 0), 0))
 const remaining = computed(() => absAmount.value - allocated.value)
@@ -123,7 +108,7 @@ watch([t, bulk], ([transaction, items]) => {
   lines.value = splits.map((s) => ({
     key: nextKey++,
     category: splitCategoryIri(s),
-    input: centsToInput(Math.abs(toCents(s.amount))),
+    input: centsToInput(Math.abs(toCents(s.amount)), true),
   }))
   const status = categorizationStatus(transaction, tree.value)
   mode.value = status.kind === 'split' || status.kind === 'partial' ? 'split' : 'simple'
@@ -134,7 +119,7 @@ watch([t, bulk], ([transaction, items]) => {
 })
 
 function addLine() {
-  lines.value.push({ key: nextKey++, category: null, input: remaining.value > 0 ? centsToInput(remaining.value) : '' })
+  lines.value.push({ key: nextKey++, category: null, input: remaining.value > 0 ? centsToInput(remaining.value, true) : '' })
   picking.value = lines.value.length - 1
 }
 
@@ -149,10 +134,8 @@ function pickForLine(iri: string) {
 }
 
 function errorMessage(e: unknown): string {
-  const data = (e as { data?: { violations?: { message: string }[]; detail?: string }; status?: number }).data
-  const status = (e as { status?: number }).status
-  if (status === 403) return "Vous n'avez pas le droit de modifier cette transaction."
-  return data?.violations?.map((v) => v.message).join(' ') || data?.detail || "L'enregistrement a échoué."
+  if (apiErrorStatus(e) === 403) return "Vous n'avez pas le droit de modifier cette transaction."
+  return apiErrorMessage(e)
 }
 
 async function save(splits: { category: string; amount: string }[]) {

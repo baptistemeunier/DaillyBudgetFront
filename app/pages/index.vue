@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Plus } from 'lucide-vue-next'
 
+definePageMeta({ tabs: true })
+
 const { data: connections, isPending, isError, refetch } = useConnectionsQuery()
 const { data: allAccounts } = useAllAccountsQuery()
 
@@ -47,7 +49,7 @@ const setOpen = (id: string, value: boolean) => {
 </script>
 
 <template>
-  <main class="flex flex-col gap-5 px-4 py-6">
+  <main class="flex flex-col gap-5 px-4 pt-6 pb-24">
     <header class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Mes comptes</h1>
     </header>

@@ -79,7 +79,7 @@ async function submitCreate() {
     const err = e as { status?: number; data?: { violations?: { message: string }[]; detail?: string } }
     createError.value =
       err.status === 403
-        ? 'Vous n’avez pas le droit de créer des catégories (scope category:write).'
+        ? 'Vous n’avez pas le droit de créer des catégories.'
         : err.data?.violations?.map((v) => v.message).join(' ') || err.data?.detail || 'La création a échoué.'
   }
 }

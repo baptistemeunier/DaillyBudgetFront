@@ -6,6 +6,37 @@ export function toCents(amount: string): number {
   return negative ? -cents : cents
 }
 
+/** Typed amount ("2 100,5", "12.50") -> positive cents ; invalid -> null. */
+export function parseAmountInput(input: string): number | null {
+  const v = input.trim().replace(/[\s\u00a0\u202f]/g, '').replace(',', '.')
+  if (!/^\d+(\.\d{0,2})?$/.test(v)) return null
+  return toCents(v)
+}
+
+/** Signed API decimal without float maths: -1250 -> "-12.50". */
+export function centsToDecimal(cents: number): string {
+  const abs = Math.abs(cents)
+  return `${cents < 0 ? '-' : ''}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`
+}
+
+/** Cents -> input value: 210000 -> "2100", 1250 -> "12,50". */
+export function centsToInput(cents: number, keepDecimals = false): string {
+  const abs = Math.abs(cents)
+  if (!keepDecimals && abs % 100 === 0) return String(abs / 100)
+  return (abs / 100).toFixed(2).replace('.', ',')
+}
+
+/** Amount without decimals when round: "2 100 €", "12,50 €". */
+export function formatCentsShort(cents: number, currency = 'EUR'): string {
+  const digits = cents % 100 === 0 ? 0 : 2
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(cents / 100)
+}
+
 export function formatCents(cents: number, currency = 'EUR'): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(cents / 100)
 }
