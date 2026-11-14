@@ -1,36 +1,104 @@
-import {
-  ArrowDownToLine,
-  ArrowLeftRight,
-  CircleHelp,
-  Heart,
-  House,
-  Repeat,
-  ShoppingBag,
-  ShoppingCart,
-  TrainFront,
-  Utensils,
-} from 'lucide-vue-next'
-import type { Component } from 'vue'
+// Category tree built from GET /categories. The API owns the type; labels (i18n)
+// and emojis are presentation, kept in front tables indexed by code.
+import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
+import type { Category, CategoryType, Transaction, TransactionSplit } from '~/types/api'
 
-export interface Category {
+/** Credit: income / internal transfers. Debit: expenses / internal transfers. */
+export function allowedTypes(amountCents: number): CategoryType[] {
+  return amountCents > 0 ? ['income', 'transfer'] : ['expense', 'transfer']
+}
+
+export interface CategoryNode {
+  iri: string
+  code: string | null
   label: string
-  icon: Component
-  classes: string
+  emoji: string
+  type: CategoryType
+  parentIri: string | null
+  /** "Alimentation › Courses" for children, label for roots. */
+  fullLabel: string
+  children: CategoryNode[]
+  order: number
 }
 
-const CATEGORIES: Record<string, Category> = {
-  groceries: { label: 'Courses', icon: ShoppingCart, classes: 'bg-orange-100 text-orange-700' },
-  restaurants: { label: 'Restaurants', icon: Utensils, classes: 'bg-amber-100 text-amber-700' },
-  transport: { label: 'Transport', icon: TrainFront, classes: 'bg-sky-100 text-sky-700' },
-  income: { label: 'Revenus', icon: ArrowDownToLine, classes: 'bg-emerald-100 text-emerald-700' },
-  housing: { label: 'Logement', icon: House, classes: 'bg-violet-100 text-violet-700' },
-  subscriptions: { label: 'Abonnements', icon: Repeat, classes: 'bg-pink-100 text-pink-700' },
-  health: { label: 'Santé', icon: Heart, classes: 'bg-rose-100 text-rose-700' },
-  shopping: { label: 'Shopping', icon: ShoppingBag, classes: 'bg-fuchsia-100 text-fuchsia-700' },
-  transfer: { label: 'Virement', icon: ArrowLeftRight, classes: 'bg-slate-100 text-slate-600' },
-  other: { label: 'Autre', icon: CircleHelp, classes: 'bg-slate-100 text-slate-600' },
+export interface CategoryTree {
+  roots: CategoryNode[]
+  byIri: Map<string, CategoryNode>
 }
 
-export function category(key: string | null | undefined): Category {
-  return CATEGORIES[key ?? 'other'] ?? CATEGORIES.other!
+const byOrderThenLabel = (a: CategoryNode, b: CategoryNode) =>
+  a.order - b.order || a.label.localeCompare(b.label, 'fr')
+
+export function buildCategoryTree(categories: Category[], locale: CategoryLocale = 'fr'): CategoryTree {
+  const byIri = new Map<string, CategoryNode>()
+  const iriByCode = new Map<string, string>()
+
+  for (const c of categories) {
+    const iri = c._links.self.href
+    byIri.set(iri, {
+      iri,
+      code: c.code,
+      label: c.name ?? (c.code ? categoryLabel(c.code, locale) : undefined) ?? c.code ?? 'Sans nom',
+      emoji: (c.code && ROOT_CATEGORY_EMOJIS[c.code]) || DEFAULT_CATEGORY_EMOJI,
+      type: c.type,
+      parentIri: c.parent ?? c._links.parent?.href ?? null,
+      fullLabel: '',
+      children: [],
+      order: (c.code ? CATEGORY_ORDER.get(c.code) : undefined) ?? Number.MAX_SAFE_INTEGER,
+    })
+    if (c.code) iriByCode.set(c.code, iri)
+  }
+
+  // System categories: parent from the code prefix when the API doesn't give it.
+  for (const node of byIri.values()) {
+    if (!node.parentIri && node.code?.includes('.')) {
+      node.parentIri = iriByCode.get(node.code.split('.')[0]!) ?? null
+    }
+  }
+
+  const roots: CategoryNode[] = []
+  for (const node of byIri.values()) {
+    const parent = node.parentIri ? byIri.get(node.parentIri) : undefined
+    if (parent) parent.children.push(node)
+    else roots.push(node)
+  }
+
+  roots.sort(byOrderThenLabel)
+  for (const root of roots) {
+    root.fullLabel = root.label
+    root.children.sort(byOrderThenLabel)
+    for (const child of root.children) {
+      child.emoji = root.emoji
+      child.fullLabel = `${root.label} › ${child.label}`
+    }
+  }
+
+  return { roots, byIri }
+}
+
+/** IRI of a split's category, whatever the HAL rendering. */
+export function splitCategoryIri(split: TransactionSplit): string | null {
+  if (typeof split.category === 'string') return split.category
+  return split.category?._links?.self?.href ?? split._links?.category?.href ?? null
+}
+
+export type CategorizationStatus =
+  | { kind: 'none' }
+  | { kind: 'partial'; remainingCents: number; main: CategoryNode | null }
+  | { kind: 'single'; main: CategoryNode | null }
+  | { kind: 'split'; count: number; main: CategoryNode | null }
+
+export function categorizationStatus(t: Transaction, tree: CategoryTree | undefined): CategorizationStatus {
+  const splits = t.splits ?? []
+  if (!splits.length) return { kind: 'none' }
+
+  const total = splits.reduce((sum, s) => sum + toCents(s.amount), 0)
+  const biggest = [...splits].sort((a, b) => Math.abs(toCents(b.amount)) - Math.abs(toCents(a.amount)))[0]!
+  const iri = splitCategoryIri(biggest)
+  const main = (iri && tree?.byIri.get(iri)) || null
+
+  const remainingCents = toCents(t.amount) - total
+  if (remainingCents !== 0) return { kind: 'partial', remainingCents, main }
+  if (splits.length === 1) return { kind: 'single', main }
+  return { kind: 'split', count: splits.length, main }
 }

@@ -1,5 +1,5 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { Account, AccountConnection, Bank, HalCollection, Transaction } from '~/types/api'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
+import type { Account, AccountConnection, Bank, Category, HalCollection, Transaction } from '~/types/api'
 
 export function useConnectionsQuery() {
   const api = useApi()
@@ -131,5 +131,63 @@ export function useTransactionsQuery(id: MaybeRefOrGetter<string>) {
     queryFn: ({ pageParam }) =>
       api<HalCollection<Transaction>>(pageParam || `/accounts/${toValue(id)}/transactions?page=1`),
     getNextPageParam: (last) => last._links.next?.href,
+  })
+}
+
+/** System + user categories, as a tree (labels from app/i18n, emojis from app/utils/categoryEmojis.ts). */
+export function useCategoriesQuery() {
+  const api = useApi()
+  return useQuery({
+    queryKey: ['categories'],
+    staleTime: 10 * 60_000,
+    queryFn: async () => buildCategoryTree(await fetchAllPages<Category>(api, '/categories')),
+  })
+}
+
+export interface SplitInput {
+  category: string // IRI
+  amount: string // signed decimal, same sign as the transaction
+}
+
+/** Replaces the splits of a transaction and patches it in the account's transaction list. */
+export function useUpdateSplits(accountId: MaybeRefOrGetter<string>) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ transaction, splits }: { transaction: Transaction; splits: SplitInput[] }) =>
+      api<Transaction>(transaction._links.self.href, {
+        method: 'PATCH',
+        body: { splits },
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<InfiniteData<HalCollection<Transaction>>>(
+        ['transactions', toValue(accountId)],
+        (data) =>
+          data && {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              _embedded: page._embedded && {
+                ...page._embedded,
+                item: page._embedded.item?.map((t) =>
+                  t._links.self.href === updated._links.self.href ? { ...t, ...updated } : t,
+                ),
+              },
+            })),
+          },
+      )
+    },
+  })
+}
+
+/** Creates a user sub-category under a root; resolves once the category tree includes it. */
+export function useCreateCategory() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, parent }: { name: string; parent: string }) =>
+      api<Category>('/categories', { method: 'POST', body: { name, parent } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   })
 }

@@ -28,6 +28,28 @@ watch(syncing, (now, before) => {
   if (before && !now) refetch()
 })
 
+// Categorization
+const { data: categoryTree } = useCategoriesQuery()
+const selected = ref<Transaction | null>(null)
+
+function rowCategory(t: Transaction): { emoji: string; label: string; uncategorized: boolean } {
+  const status = categorizationStatus(t, categoryTree.value)
+  switch (status.kind) {
+    case 'none':
+      return { emoji: '❔', label: 'Non catégorisé', uncategorized: true }
+    case 'partial':
+      return {
+        emoji: status.main?.emoji ?? '❔',
+        label: `Partiellement catégorisé · ${formatCents(Math.abs(status.remainingCents), t.currency)} restant`,
+        uncategorized: true,
+      }
+    case 'single':
+      return { emoji: status.main?.emoji ?? '🏷️', label: status.main?.label ?? 'Catégorie', uncategorized: false }
+    case 'split':
+      return { emoji: status.main?.emoji ?? '🏷️', label: `Ventilé · ${status.count} catégories`, uncategorized: false }
+  }
+}
+
 const balance = computed(() =>
   account.value?.balanceAmount != null
     ? formatCents(toCents(account.value.balanceAmount), account.value.balanceCurrency ?? 'EUR')
@@ -184,24 +206,36 @@ function back() {
             <span class="tabular-nums">{{ group.totals }}</span>
           </h2>
           <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <li v-for="t in group.items" :key="t._links.self.href" class="flex min-h-16 items-center gap-3 px-3.5 py-2.5">
-              <span
-                aria-hidden="true"
-                class="flex size-10 flex-none items-center justify-center rounded-full"
-                :class="category(t.category).classes"
+            <li v-for="t in group.items" :key="t._links.self.href">
+              <button
+                type="button"
+                class="flex min-h-16 w-full items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50"
+                aria-haspopup="dialog"
+                @click="selected = t"
               >
-                <component :is="category(t.category).icon" class="size-5" />
-              </span>
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="truncate text-[15px] font-medium">{{ t.description }}</span>
-                <span class="text-[13px] text-slate-500">{{ category(t.category).label }}</span>
-              </span>
-              <span
-                class="flex-none text-[15px] font-semibold tabular-nums"
-                :class="toCents(t.amount) > 0 ? 'text-emerald-700' : 'text-slate-900'"
-              >
-                {{ formatSignedCents(toCents(t.amount), t.currency) }}
-              </span>
+                <span
+                  aria-hidden="true"
+                  class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
+                  :class="rowCategory(t).uncategorized ? 'bg-amber-50' : 'bg-slate-100'"
+                >
+                  {{ rowCategory(t).emoji }}
+                </span>
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span class="truncate text-[15px] font-medium">{{ t.description }}</span>
+                  <span
+                    class="truncate text-[13px]"
+                    :class="rowCategory(t).uncategorized ? 'text-amber-700' : 'text-slate-500'"
+                  >
+                    {{ rowCategory(t).label }}
+                  </span>
+                </span>
+                <span
+                  class="flex-none text-[15px] font-semibold tabular-nums"
+                  :class="toCents(t.amount) > 0 ? 'text-emerald-700' : 'text-slate-900'"
+                >
+                  {{ formatSignedCents(toCents(t.amount), t.currency) }}
+                </span>
+              </button>
             </li>
           </ul>
         </section>
@@ -227,5 +261,7 @@ function back() {
         <div v-if="hasNextPage" ref="sentinel" class="h-px" aria-hidden="true" />
       </template>
     </main>
+
+    <CategorizeSheet :transaction="selected" :account-id="id" @close="selected = null" />
   </div>
 </template>

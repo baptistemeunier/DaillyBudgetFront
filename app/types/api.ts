@@ -49,8 +49,30 @@ export interface Transaction extends HalResource {
   currency: string
   bookingAt: string | null
   isBooked: boolean
-  // Not exposed by the API yet (handoff §6.2)
-  category?: string | null
+  /** Categorized when the sum equals `amount`; the difference is uncategorized. */
+  splits?: TransactionSplit[]
+}
+
+/**
+ * Category relation: an IRI ("/categories/{id}"), or HAL links depending on
+ * how the API renders this embedded non-resource object — see splitCategoryIri().
+ */
+export interface TransactionSplit {
+  amount: string
+  category?: string | null | { _links?: { self?: HalLink } }
+  _links?: { category?: HalLink }
+}
+
+export type CategoryType = 'expense' | 'income' | 'transfer'
+
+export interface Category extends HalResource {
+  code: string | null
+  /** null for system categories: the label comes from the front i18n table, by code. */
+  name: string | null
+  /** Owned by the API; sub-categories inherit the type of their root. */
+  type: CategoryType
+  parent?: string | null
+  _links: HalResource['_links'] & { parent?: HalLink }
 }
 
 export interface Bank extends HalResource {
