@@ -182,7 +182,7 @@ function retry() {
                   aria-hidden="true"
                   class="flex size-10 flex-none items-center justify-center rounded-full bg-slate-100 text-lg"
                 >
-                  {{ root.emoji }}
+                  <component :is="root.icon" class="size-5 text-slate-700" />
                 </span>
                 <label :for="`line-${root.iri}`" class="min-w-0 flex-1 text-[15px] font-semibold">{{ root.label }}</label>
                 <div class="relative w-28 flex-none">

@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { Budget, BudgetLineInput, HalCollection, Statement, Transaction } from '~/types/api'
+import type { Budget, BudgetLineInput, HalCollection, SavingStatement, Statement, Transaction } from '~/types/api'
 
 /** The user's budget, or null when none was set yet (GET /budgets returns 0 or 1 item). */
 export function useBudgetQuery() {
@@ -36,6 +36,16 @@ export function useStatementQuery(period: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: ['statement', computed(() => toValue(period))],
     queryFn: () => api<Statement>(`/statements/${toValue(period)}`),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Saving statement of a period: monthly in / out, envelopes, amount left to allocate. */
+export function useSavingStatementQuery(period: MaybeRefOrGetter<string>) {
+  const api = useApi()
+  return useQuery({
+    queryKey: ['savings', computed(() => toValue(period))],
+    queryFn: () => api<SavingStatement>(`/savings/${toValue(period)}`),
     placeholderData: keepPreviousData,
   })
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // "Transfert" tab of the categorize sheet: pick the other account, the category follows.
 // - checking account -> transfer category ("Virements entre comptes"), full amount;
-// - savings / investment account -> saving category ("Épargne"), full amount. A manual account gets
-//   the mirror transaction (counterpartAccount); in another currency, the received amount is asked first.
+// - savings / investment account -> then pick the envelope (a sub-category of Épargne: the API refuses
+//   a root), full amount. A manual account gets the mirror transaction (counterpartAccount);
+//   in another currency, the received amount is asked last.
 import { Check, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import type { SplitInput } from '~/composables/useBankingQueries'
 import type { Account, Transaction } from '~/types/api'
@@ -27,17 +28,21 @@ const groups = computed(() =>
   ].filter((g) => g.items.length),
 )
 
+// Sub-categories only (the API refuses a root on a split).
 const transferCategory = computed(
   () =>
     [...props.tree.byIri.values()].find((n) => n.code === 'internal.transfers') ??
-    props.tree.roots.find((n) => n.type === 'transfer'),
+    props.tree.roots.find((n) => n.type === 'transfer')?.children[0],
 )
-const savingCategory = computed(() => props.tree.roots.find((n) => n.type === 'saving'))
-const categoryFor = (a: Account) => (a.type === 'checking' ? transferCategory.value : savingCategory.value)
+const hasSavingRoot = computed(() => props.tree.roots.some((n) => n.type === 'saving'))
+const canPick = (a: Account) => (a.type === 'checking' ? !!transferCategory.value : hasSavingRoot.value)
 
 // Current state: the manual account of a saving split, or just a category (no account stored).
 const splits = computed(() => props.transaction.splits ?? [])
 const currentAccount = computed(() => splits.value.find((s) => s._links?.counterpartAccount)?._links?.counterpartAccount?.href)
+const currentEnvelope = computed(() =>
+  splits.value.map(splitCategoryIri).find((i) => !!i && props.tree.byIri.get(i)?.type === 'saving'),
+)
 const currentLabel = computed(() => {
   if (currentAccount.value) return null
   const iri = splits.value.map(splitCategoryIri).find((i) => {
@@ -51,34 +56,45 @@ const currentLabel = computed(() => {
 const otherCurrency = (a: Account) =>
   a.manual && a.balanceCurrency && a.balanceCurrency !== props.transaction.currency ? a.balanceCurrency : null
 
-const converting = ref<Account | null>(null)
+// Savings account chosen -> envelope -> (other currency) amount received.
+const chosen = ref<Account | null>(null)
+const envelope = ref<string | null>(null)
 const received = ref('')
 const receivedCents = computed(() => parseAmountInput(received.value))
+const converting = computed(() => (chosen.value && envelope.value && otherCurrency(chosen.value) ? chosen.value : null))
 watch(
   () => props.transaction,
   () => {
-    converting.value = null
+    chosen.value = null
+    envelope.value = null
   },
 )
 
 function pickAccount(a: Account) {
-  if (props.pending || !categoryFor(a)) return
-  if (otherCurrency(a)) {
-    converting.value = a
-    received.value = ''
+  if (props.pending || !canPick(a)) return
+  if (a.type === 'checking') {
+    emit('save', [{ category: transferCategory.value!.iri, amount: props.transaction.amount }])
     return
   }
-  save(a)
+  chosen.value = a
+  envelope.value = null
+  received.value = ''
 }
 
-function save(a: Account, counterpartCents?: number) {
-  const category = categoryFor(a)
-  if (!category) return
+function pickEnvelope(iri: string) {
+  if (!chosen.value || props.pending) return
+  envelope.value = iri
+  if (!otherCurrency(chosen.value)) saveSaving()
+}
+
+function saveSaving(counterpartCents?: number) {
+  const a = chosen.value
+  if (!a || !envelope.value) return
   emit('save', [
     {
-      category: category.iri,
+      category: envelope.value,
       amount: props.transaction.amount,
-      ...(a.type !== 'checking' && a.manual && { counterpartAccount: a._links.self.href }),
+      ...(a.manual && { counterpartAccount: a._links.self.href }),
       ...(counterpartCents !== undefined && { counterpartAmount: centsToDecimal(-sign.value * counterpartCents) }),
     },
   ])
@@ -86,7 +102,7 @@ function save(a: Account, counterpartCents?: number) {
 
 function saveConverted() {
   if (!converting.value || !receivedCents.value || props.pending) return
-  save(converting.value, receivedCents.value)
+  saveSaving(receivedCents.value)
 }
 </script>
 
@@ -96,9 +112,9 @@ function saveConverted() {
     <button
       type="button"
       class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
-      @click="converting = null"
+      @click="envelope = null"
     >
-      <ChevronLeft class="size-5" aria-hidden="true" /> Changer de compte
+      <ChevronLeft class="size-5" aria-hidden="true" /> Changer d'enveloppe
     </button>
     <p class="text-sm text-slate-600">
       {{ accountName(converting) }} est en {{ converting.balanceCurrency }}. Combien
@@ -126,6 +142,28 @@ function saveConverted() {
       {{ pending ? 'Enregistrement…' : 'Enregistrer' }}
     </button>
   </form>
+
+  <!-- Envelope of the savings account -->
+  <div v-else-if="chosen" class="flex flex-col gap-3">
+    <button
+      type="button"
+      class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+      @click="chosen = null"
+    >
+      <ChevronLeft class="size-5" aria-hidden="true" /> Changer de compte
+    </button>
+    <p class="text-sm text-slate-600">
+      {{ outgoing ? 'Dans quelle enveloppe va cet argent' : 'De quelle enveloppe sort cet argent' }}
+      ({{ accountName(chosen) }}) ?
+    </p>
+    <CategoryPicker
+      :tree="tree"
+      :types="['saving']"
+      :selected="currentEnvelope ? [currentEnvelope] : []"
+      :busy="pending"
+      @pick="pickEnvelope"
+    />
+  </div>
 
   <!-- Other account -->
   <div v-else class="flex flex-col gap-4">
@@ -165,7 +203,7 @@ function saveConverted() {
           <button
             type="button"
             class="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50 disabled:opacity-50"
-            :disabled="pending || !categoryFor(a)"
+            :disabled="pending || !canPick(a)"
             @click="pickAccount(a)"
           >
             <AccountTypeIcon v-if="a.manual" :type="a.type" small />
@@ -177,7 +215,7 @@ function saveConverted() {
               </span>
             </span>
             <Check v-if="a._links.self.href === currentAccount" class="size-5 text-indigo-600" aria-label="Sélectionné" />
-            <ChevronRight v-else-if="otherCurrency(a)" class="size-4 flex-none text-slate-400" aria-hidden="true" />
+            <ChevronRight v-else-if="a.type !== 'checking'" class="size-4 flex-none text-slate-400" aria-hidden="true" />
           </button>
         </li>
       </ul>

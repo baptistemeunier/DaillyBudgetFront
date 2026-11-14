@@ -89,10 +89,23 @@ export interface Category extends HalResource {
   code: string | null
   /** null for system categories: the label comes from the front i18n table, by code. */
   name: string | null
+  /** Lucide icon name ("piggy-bank"); null: the parent's. */
+  icon?: string | null
   /** Owned by the API; sub-categories inherit the type of their root. */
   type: CategoryType
   parent?: string | null
+  /** Saving categories (envelopes) only: amount to reach, optionally by targetDate. */
+  targetAmount?: string | null
+  targetDate?: string | null
   _links: HalResource['_links'] & { parent?: HalLink }
+}
+
+/** Name and target of a saving envelope (POST / PATCH /categories). */
+export interface EnvelopeInput {
+  name: string
+  icon: string | null
+  targetAmount: string | null
+  targetDate: string | null // YYYY-MM-DD
 }
 
 export interface Bank extends HalResource {
@@ -177,4 +190,42 @@ export interface StatementDetail {
   _links?: { category?: HalLink; parent?: HalLink }
   amount: string
   transactionCount?: number
+}
+
+/** Saving in and out over one month of a saving statement (one per month, even without movement). */
+export interface SavingMonth {
+  month: string // YYYY-MM
+  creditAmount: string
+  /** Positive. */
+  debitAmount: string
+}
+
+/** Saving category (envelope): HAL category link, read with splitCategoryIri(). */
+export interface SavingEnvelope {
+  category?: string | null | { _links?: { self?: HalLink } }
+  _links?: { category?: HalLink }
+  /** Total up to the end of the period. */
+  amount: string
+  /** Net over the period. */
+  periodAmount: string
+  targetAmount?: string | null
+  targetDate?: string | null
+}
+
+/** Saving over whole months (GET /savings/{period}). */
+export interface SavingStatement extends HalResource {
+  period: string
+  from: string
+  to: string
+  months: number
+  currency: string
+  creditAmount: string
+  /** Positive. */
+  debitAmount: string
+  monthly: SavingMonth[]
+  /** Net saving in no envelope ("reste à répartir"). */
+  uncategorizedAmount: string
+  uncategorizedCount?: number
+  /** Every active envelope (0.00 when empty), sorted by amount, highest first. */
+  envelopes: SavingEnvelope[]
 }

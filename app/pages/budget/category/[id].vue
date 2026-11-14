@@ -2,6 +2,7 @@
 // A root category over the period: spent vs its budget, then one row per sub-category
 // (from the statement details; sub-categories without movement shown at 0).
 import { ChevronLeft } from 'lucide-vue-next'
+import type { Component } from 'vue'
 import type { StatementRowView } from '~/types/statement'
 
 const route = useRoute()
@@ -42,11 +43,11 @@ const rows = computed<StatementRowView[]>(() => {
     }
   }
 
-  const row = (iri: string, labelText: string, emoji: string): StatementRowView => {
+  const row = (iri: string, labelText: string, icon: Component): StatementRowView => {
     const data = byCategory.get(iri) ?? { cents: 0, count: 0 }
     return {
       key: iri,
-      emoji,
+      icon,
       label: labelText,
       color: color.value,
       cents: data.cents,
@@ -58,9 +59,9 @@ const rows = computed<StatementRowView[]>(() => {
     }
   }
 
-  const result = r.children.map((child) => row(child.iri, child.label, child.emoji))
+  const result = r.children.map((child) => row(child.iri, child.label, child.icon))
   // Splits made directly on the root (no sub-category)
-  if (byCategory.has(r.iri)) result.push(row(r.iri, `${r.label} (sans sous-catégorie)`, r.emoji))
+  if (byCategory.has(r.iri)) result.push(row(r.iri, `${r.label} (sans sous-catégorie)`, r.icon))
   return result.sort((a, b) => b.cents - a.cents)
 })
 
@@ -87,7 +88,7 @@ function back() {
         class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
         :style="{ backgroundColor: `${color}26` }"
       >
-        {{ root.emoji }}
+        <component :is="root.icon" v-if="root" class="size-5" :style="{ color }" />
       </span>
       <h1 class="truncate text-xl font-bold">{{ root?.label ?? 'Catégorie' }}</h1>
     </header>

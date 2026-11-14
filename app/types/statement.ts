@@ -1,3 +1,5 @@
+import type { Component } from 'vue'
+
 /** One segment of the statement donut. */
 export interface DonutSegment {
   key: string
@@ -9,7 +11,8 @@ export interface DonutSegment {
 /** One category row of the statement list (also the donut legend). */
 export interface StatementRowView {
   key: string
-  emoji: string
+  /** Lucide icon of the category. */
+  icon: Component
   label: string
   /** Chart color of the category (identity, matches the donut). */
   color: string

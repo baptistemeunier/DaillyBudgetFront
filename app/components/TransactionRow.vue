@@ -4,7 +4,7 @@ import type { Transaction } from '~/types/api'
 
 const props = defineProps<{
   transaction: Transaction
-  /** Selection mode: a check circle replaces the emoji and the row toggles. */
+  /** Selection mode: a check circle replaces the icon and the row toggles. */
   selectable?: boolean
   selected?: boolean
   /** Subtitle = "Account · Bank", followed by the category unless there is none. */
@@ -59,7 +59,7 @@ const accountLabel = computed(() =>
       class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
       :class="row.uncategorized ? 'bg-amber-50' : 'bg-slate-100'"
     >
-      {{ row.emoji }}
+      <component :is="row.icon" class="size-5" :class="row.uncategorized ? 'text-amber-700' : 'text-slate-700'" />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="truncate text-[15px] font-medium">{{ transaction.description }}</span>

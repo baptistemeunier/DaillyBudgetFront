@@ -16,3 +16,15 @@ export const CURRENCIES = [
   { code: 'EUR', label: 'EUR €' },
   { code: 'PHP', label: 'PHP ₱' },
 ] as const
+
+/** Group of accounts a list can be limited to: checking (budget) or savings + investment (savings). */
+export type AccountScope = 'checking' | 'savings'
+
+export const ACCOUNT_SCOPES: Record<AccountScope, { types: AccountType[]; label: string }> = {
+  checking: { types: ['checking'], label: 'Comptes courants' },
+  savings: { types: ['savings', 'investment'], label: "Comptes d'épargne" },
+}
+
+export function isAccountScope(value: unknown): value is AccountScope {
+  return value === 'checking' || value === 'savings'
+}

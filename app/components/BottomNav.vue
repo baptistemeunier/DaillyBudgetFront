@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { PiggyBank, Wallet } from 'lucide-vue-next'
+import { ChartPie, House, PiggyBank } from 'lucide-vue-next'
 
 const tabs = [
-  { to: '/', label: 'Comptes', icon: Wallet },
-  { to: '/budget', label: 'Budget', icon: PiggyBank },
+  { to: '/', label: 'Comptes', icon: House },
+  { to: '/budget', label: 'Budget', icon: ChartPie },
+  { to: '/savings', label: 'Épargne', icon: PiggyBank },
 ]
 </script>
 
@@ -12,7 +13,7 @@ const tabs = [
     class="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]"
     aria-label="Navigation principale"
   >
-    <ul class="grid h-16 grid-cols-2">
+    <ul class="grid h-16 grid-cols-3">
       <li v-for="tab in tabs" :key="tab.to">
         <NuxtLink
           :to="tab.to"

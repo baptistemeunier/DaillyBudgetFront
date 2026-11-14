@@ -389,7 +389,11 @@ function onBackdropClick(event: MouseEvent) {
                   class="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left hover:bg-slate-50"
                   @click="picking = index"
                 >
-                  <span aria-hidden="true">{{ line.category ? tree.byIri.get(line.category)?.emoji : '❔' }}</span>
+                  <component
+                    :is="(line.category && tree.byIri.get(line.category)?.icon) || UNCATEGORIZED_ICON"
+                    class="size-5 flex-none text-slate-600"
+                    aria-hidden="true"
+                  />
                   <span class="truncate text-[15px]" :class="line.category ? 'font-medium' : 'text-slate-500'">
                     {{ line.category ? (tree.byIri.get(line.category)?.fullLabel ?? 'Catégorie') : 'Choisir une catégorie' }}
                   </span>

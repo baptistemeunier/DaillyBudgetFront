@@ -30,7 +30,7 @@ const bar = computed(() => budgetStatusColor(ratio.value))
       class="flex size-11 flex-none items-center justify-center rounded-full text-lg"
       :style="{ backgroundColor: `${row.color}26` }"
     >
-      {{ row.emoji }}
+      <component :is="row.icon" class="size-5" :style="{ color: row.color }" />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-1">
       <span class="flex items-center gap-1.5">

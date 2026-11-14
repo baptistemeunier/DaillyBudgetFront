@@ -31,7 +31,7 @@ const rows = computed<StatementRowView[]>(() => {
     if (cents <= 0 && targetCents <= 0) continue
     result.push({
       key: iri ?? `line-${result.length}`,
-      emoji: node?.emoji ?? '🏷️',
+      icon: node?.icon ?? DEFAULT_CATEGORY_ICON,
       label: node?.label ?? 'Catégorie',
       color: categoryColor(node?.code ?? null) ?? OTHER_COLOR,
       cents,
@@ -53,7 +53,7 @@ const rows = computed<StatementRowView[]>(() => {
   if (uncategorized > 0) {
     result.push({
       key: 'uncategorized',
-      emoji: '❔',
+      icon: UNCATEGORIZED_ICON,
       label: 'Non catégorisé',
       color: UNCATEGORIZED_COLOR,
       cents: uncategorized,
@@ -61,7 +61,7 @@ const rows = computed<StatementRowView[]>(() => {
       count: (isExpenses.value ? s.uncategorizedCount : s.uncategorizedIncomeCount) ?? 0,
       percent: null,
       currency: currency.value,
-      to: '/transactions/to-categorize',
+      to: '/transactions/to-categorize?accounts=checking',
     })
   }
 

@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, Category, EnvelopeInput, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { AccountScope } from '~/utils/accounts'
 
 export function useConnectionsQuery() {
   const api = useApi()
@@ -160,6 +161,7 @@ export function useCreateManualAccount() {
   return useMutation({
     mutationFn: (input: CreateManualAccountInput) => api<Account>('/accounts', { method: 'POST', body: input }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['account'] })
     },
@@ -180,8 +182,9 @@ export function useUpdateAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['account'] })
-      // The type decides whether the account counts in the budget.
+      // The type decides whether the account counts in the budget or in the savings.
       queryClient.invalidateQueries({ queryKey: ['statement'] })
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
     },
   })
 }
@@ -211,21 +214,26 @@ export function useTransactionsQuery(id: MaybeRefOrGetter<string>) {
   })
 }
 
-/** Every transaction not fully categorized, all accounts together, page by page. */
-export function useUncategorizedTransactionsQuery() {
+/** Every transaction not fully categorized, all accounts together or only checking / savings ones, page by page. */
+export function useUncategorizedTransactionsQuery(scope: MaybeRefOrGetter<AccountScope | null> = null) {
   const api = useApi()
   return useInfiniteQuery({
-    queryKey: ['transactions', 'uncategorized'],
+    queryKey: ['transactions', 'uncategorized', computed(() => toValue(scope))],
     // Refetched on each visit: rows categorized last time are gone.
     staleTime: 0,
     initialPageParam: '',
-    queryFn: ({ pageParam }) =>
-      api<HalCollection<Transaction>>(pageParam || '/transactions?uncategorized=true&page=1'),
+    queryFn: ({ pageParam }) => {
+      if (pageParam) return api<HalCollection<Transaction>>(pageParam)
+      const query = new URLSearchParams({ uncategorized: 'true', page: '1' })
+      const s = toValue(scope)
+      for (const type of s ? ACCOUNT_SCOPES[s].types : []) query.append('accountType[]', type)
+      return api<HalCollection<Transaction>>(`/transactions?${query}`)
+    },
     getNextPageParam: (last) => last._links.next?.href,
   })
 }
 
-/** System + user categories, as a tree (labels from app/i18n, emojis from app/utils/categoryEmojis.ts). */
+/** System + user categories, as a tree (labels from app/i18n, Lucide icons from app/utils/categoryIcons.ts). */
 export function useCategoriesQuery() {
   const api = useApi()
   return useQuery({
@@ -258,6 +266,7 @@ export function useUpdateSplits() {
     onSuccess: (updated, { transaction, splits }) => {
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
       queryClient.invalidateQueries({ queryKey: ['statement'] })
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
       // Saving towards a manual account (now or before): its mirror transaction and balance changed.
       const counterparts = new Set(
         [
@@ -295,8 +304,30 @@ export function useCreateCategory() {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ name, parent }: { name: string; parent: string }) =>
-      api<Category>('/categories', { method: 'POST', body: { name, parent } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    mutationFn: ({ parent, ...fields }: { name: string; parent: string } & Partial<Omit<EnvelopeInput, 'name'>>) =>
+      api<Category>('/categories', { method: 'POST', body: { ...fields, parent } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      // A new saving category is a new (empty) envelope.
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
+    },
+  })
+}
+
+/** Renames a user category, or changes the target of an envelope. */
+export function useUpdateCategory() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ iri, changes }: { iri: string; changes: Partial<EnvelopeInput> }) =>
+      api<Category>(iri, {
+        method: 'PATCH',
+        body: changes,
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
+    },
   })
 }

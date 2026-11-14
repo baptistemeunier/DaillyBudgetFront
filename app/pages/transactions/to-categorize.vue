@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Every transaction not fully categorized, all accounts together.
+// Every transaction not fully categorized, all accounts together, or only the checking accounts
+// (?accounts=checking, from the budget) or the savings ones (?accounts=savings, from the savings tab).
 // A row categorized here stays in the list (with its new label) until the next reload,
 // so the list doesn't jump under the finger.
 // Selection mode: tick several rows and give them one category at once (bulk sheet).
@@ -7,6 +8,8 @@ import { ChevronLeft } from 'lucide-vue-next'
 import type { Transaction } from '~/types/api'
 
 const router = useRouter()
+const route = useRoute()
+const scope = computed(() => (isAccountScope(route.query.accounts) ? route.query.accounts : null))
 
 const {
   data: pages,
@@ -17,7 +20,7 @@ const {
   hasNextPage,
   fetchNextPage,
   refetch,
-} = useUncategorizedTransactionsQuery()
+} = useUncategorizedTransactionsQuery(scope)
 
 const { data: tree } = useCategoriesQuery()
 const groups = useDayGroups(pages)
@@ -124,8 +127,9 @@ function back() {
           <p class="truncate text-[13px] text-slate-500" aria-live="polite">
             <template v-if="remaining != null">
               {{ remaining }} transaction{{ remaining > 1 ? 's' : '' }} restante{{ remaining > 1 ? 's' : '' }}
+              ·
             </template>
-            <template v-else>Tous comptes</template>
+            {{ scope ? ACCOUNT_SCOPES[scope].label : 'Tous comptes' }}
           </p>
         </div>
         <template v-if="selecting">

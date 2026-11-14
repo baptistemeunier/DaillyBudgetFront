@@ -1,6 +1,7 @@
-// Category tree built from GET /categories. The API owns the type; labels (i18n)
-// and emojis are presentation, kept in front tables indexed by code.
+// Category tree built from GET /categories. The API owns the type and the icon (Lucide name);
+// labels of system categories come from the front i18n table, by code.
 import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
+import type { Component } from 'vue'
 import type { AccountType, Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
 
 /**
@@ -16,13 +17,19 @@ export interface CategoryNode {
   iri: string
   code: string | null
   label: string
-  emoji: string
+  /** Lucide component: the category's icon, else its parent's, else Tag. */
+  icon: Component
+  /** The category's own icon name (null: none set). */
+  iconName: string | null
   type: CategoryType
   parentIri: string | null
   /** "Alimentation › Courses" for children, label for roots. */
   fullLabel: string
   children: CategoryNode[]
   order: number
+  /** Envelopes (saving categories) only. */
+  targetAmount: string | null
+  targetDate: string | null
 }
 
 export interface CategoryTree {
@@ -43,12 +50,15 @@ export function buildCategoryTree(categories: Category[], locale: CategoryLocale
       iri,
       code: c.code,
       label: c.name ?? (c.code ? categoryLabel(c.code, locale) : undefined) ?? c.code ?? 'Sans nom',
-      emoji: (c.code && ROOT_CATEGORY_EMOJIS[c.code]) || DEFAULT_CATEGORY_EMOJI,
+      icon: categoryIcon(c.icon) ?? DEFAULT_CATEGORY_ICON,
+      iconName: c.icon ?? null,
       type: c.type,
       parentIri: c.parent ?? c._links.parent?.href ?? null,
       fullLabel: '',
       children: [],
       order: (c.code ? CATEGORY_ORDER.get(c.code) : undefined) ?? Number.MAX_SAFE_INTEGER,
+      targetAmount: c.targetAmount ?? null,
+      targetDate: c.targetDate ?? null,
     })
     if (c.code) iriByCode.set(c.code, iri)
   }
@@ -72,7 +82,7 @@ export function buildCategoryTree(categories: Category[], locale: CategoryLocale
     root.fullLabel = root.label
     root.children.sort(byOrderThenLabel)
     for (const child of root.children) {
-      child.emoji = root.emoji
+      if (!categoryIcon(child.iconName)) child.icon = root.icon
       child.fullLabel = `${root.label} › ${child.label}`
     }
   }
@@ -123,27 +133,27 @@ export function categorizationStatus(t: Transaction, tree: CategoryTree | undefi
 }
 
 export interface TransactionRowCategory {
-  emoji: string
+  icon: Component
   label: string
   /** Still something to categorize (nothing or only part of the amount). */
   uncategorized: boolean
 }
 
-/** Emoji + label shown on a transaction row. */
+/** Icon + label shown on a transaction row. */
 export function transactionRowCategory(t: Transaction, tree: CategoryTree | undefined): TransactionRowCategory {
   const status = categorizationStatus(t, tree)
   switch (status.kind) {
     case 'none':
-      return { emoji: '❔', label: 'Non catégorisé', uncategorized: true }
+      return { icon: UNCATEGORIZED_ICON, label: 'Non catégorisé', uncategorized: true }
     case 'partial':
       return {
-        emoji: status.main?.emoji ?? '❔',
+        icon: status.main?.icon ?? UNCATEGORIZED_ICON,
         label: `Partiellement catégorisé · ${formatCents(Math.abs(status.remainingCents), t.currency)} restant`,
         uncategorized: true,
       }
     case 'single':
-      return { emoji: status.main?.emoji ?? '🏷️', label: status.main?.label ?? 'Catégorie', uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: status.main?.label ?? 'Catégorie', uncategorized: false }
     case 'split':
-      return { emoji: status.main?.emoji ?? '🏷️', label: `Ventilé · ${status.count} catégories`, uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: `Ventilé · ${status.count} catégories`, uncategorized: false }
   }
 }
