@@ -29,26 +29,7 @@ watch(syncing, (now, before) => {
 })
 
 // Categorization
-const { data: categoryTree } = useCategoriesQuery()
 const selected = ref<Transaction | null>(null)
-
-function rowCategory(t: Transaction): { emoji: string; label: string; uncategorized: boolean } {
-  const status = categorizationStatus(t, categoryTree.value)
-  switch (status.kind) {
-    case 'none':
-      return { emoji: '❔', label: 'Non catégorisé', uncategorized: true }
-    case 'partial':
-      return {
-        emoji: status.main?.emoji ?? '❔',
-        label: `Partiellement catégorisé · ${formatCents(Math.abs(status.remainingCents), t.currency)} restant`,
-        uncategorized: true,
-      }
-    case 'single':
-      return { emoji: status.main?.emoji ?? '🏷️', label: status.main?.label ?? 'Catégorie', uncategorized: false }
-    case 'split':
-      return { emoji: status.main?.emoji ?? '🏷️', label: `Ventilé · ${status.count} catégories`, uncategorized: false }
-  }
-}
 
 const balance = computed(() =>
   account.value?.balanceAmount != null
@@ -56,72 +37,14 @@ const balance = computed(() =>
     : null,
 )
 
-// Merge pages first (a day can be split across two pages), dedupe, then group by Paris day.
-interface DayGroup {
-  key: string
-  label: string
-  totals: string
-  items: Transaction[]
-}
-
-const groups = computed<DayGroup[]>(() => {
-  const seen = new Set<string>()
-  const byDay = new Map<string, Transaction[]>()
-
-  for (const page of pages.value?.pages ?? []) {
-    for (const t of halItems(page)) {
-      if (seen.has(t._links.self.href)) continue
-      seen.add(t._links.self.href)
-      const key = t.bookingAt ? dayKey(t.bookingAt) : 'unknown'
-      if (!byDay.has(key)) byDay.set(key, [])
-      byDay.get(key)!.push(t)
-    }
-  }
-
-  return [...byDay.entries()].map(([key, items]) => {
-    // One total per currency (usually just one).
-    const sums = new Map<string, number>()
-    for (const t of items) sums.set(t.currency, (sums.get(t.currency) ?? 0) + toCents(t.amount))
-    return {
-      key,
-      label: key === 'unknown' ? 'Date inconnue' : dayLabel(key),
-      totals: [...sums].map(([cur, cents]) => formatSignedCents(cents, cur)).join(' · '),
-      items,
-    }
-  })
-})
+const groups = useDayGroups(pages)
 
 const isEmpty = computed(() => !isPending.value && !isError.value && groups.value.length === 0)
 
-// Infinite scroll: sentinel ~160 px before the end of the scroll container.
+// Infinite scroll
 const scroller = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting && hasNextPage.value && !isFetchingNextPage.value && !isFetchNextPageError.value) {
-        fetchNextPage()
-      }
-    },
-    { root: scroller.value, rootMargin: '0px 0px 160px 0px' },
-  )
-})
-onBeforeUnmount(() => observer?.disconnect())
-
-watch(sentinel, (el, old) => {
-  if (old) observer?.unobserve(old)
-  if (el) observer?.observe(el)
-})
-
-// A page that doesn't fill the screen leaves the sentinel visible: re-observe
-// so the observer fires again (observe() always reports the current state).
-watch(isFetchingNextPage, (fetching) => {
-  if (fetching || !sentinel.value || !observer) return
-  observer.unobserve(sentinel.value)
-  observer.observe(sentinel.value)
-})
+useInfiniteScroll(scroller, sentinel, { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage })
 
 function back() {
   if (window.history.state?.back) router.back()
@@ -207,35 +130,7 @@ function back() {
           </h2>
           <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <li v-for="t in group.items" :key="t._links.self.href">
-              <button
-                type="button"
-                class="flex min-h-16 w-full items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50"
-                aria-haspopup="dialog"
-                @click="selected = t"
-              >
-                <span
-                  aria-hidden="true"
-                  class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
-                  :class="rowCategory(t).uncategorized ? 'bg-amber-50' : 'bg-slate-100'"
-                >
-                  {{ rowCategory(t).emoji }}
-                </span>
-                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span class="truncate text-[15px] font-medium">{{ t.description }}</span>
-                  <span
-                    class="truncate text-[13px]"
-                    :class="rowCategory(t).uncategorized ? 'text-amber-700' : 'text-slate-500'"
-                  >
-                    {{ rowCategory(t).label }}
-                  </span>
-                </span>
-                <span
-                  class="flex-none text-[15px] font-semibold tabular-nums"
-                  :class="toCents(t.amount) > 0 ? 'text-emerald-700' : 'text-slate-900'"
-                >
-                  {{ formatSignedCents(toCents(t.amount), t.currency) }}
-                </span>
-              </button>
+              <TransactionRow :transaction="t" @select="selected = t" />
             </li>
           </ul>
         </section>
@@ -262,6 +157,6 @@ function back() {
       </template>
     </main>
 
-    <CategorizeSheet :transaction="selected" :account-id="id" @close="selected = null" />
+    <CategorizeSheet :transaction="selected" @close="selected = null" />
   </div>
 </template>

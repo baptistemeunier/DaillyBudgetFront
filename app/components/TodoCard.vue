@@ -34,6 +34,9 @@ interface CardView {
   text: string
   cta: string
   onClick?: () => void
+  /** Internal route */
+  to?: string
+  /** External link (bank consent page) */
   href?: string
   disabled?: boolean
 }
@@ -85,8 +88,7 @@ const view = computed<CardView>(() => {
         title: `${n} transaction${n > 1 ? 's' : ''} à catégoriser`,
         text: `Classe-les pour que ton budget de ${month} soit juste.`,
         cta: 'Catégoriser',
-        // No destination yet
-        disabled: true,
+        to: '/transactions/to-categorize',
       }
     }
   }
@@ -115,7 +117,10 @@ const buttonClass = 'inline-flex h-10 items-center gap-1.5 rounded-full px-4 tex
     </div>
 
     <div class="mt-auto">
-      <a v-if="view.href" :href="view.href" :class="[buttonClass, view.tint.button]">
+      <NuxtLink v-if="view.to" :to="view.to" :class="[buttonClass, view.tint.button]">
+        {{ view.cta }} <ArrowRight class="size-4" aria-hidden="true" />
+      </NuxtLink>
+      <a v-else-if="view.href" :href="view.href" :class="[buttonClass, view.tint.button]">
         {{ view.cta }} <ArrowRight class="size-4" aria-hidden="true" />
       </a>
       <button

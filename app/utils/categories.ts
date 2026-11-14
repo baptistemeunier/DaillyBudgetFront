@@ -102,3 +102,29 @@ export function categorizationStatus(t: Transaction, tree: CategoryTree | undefi
   if (splits.length === 1) return { kind: 'single', main }
   return { kind: 'split', count: splits.length, main }
 }
+
+export interface TransactionRowCategory {
+  emoji: string
+  label: string
+  /** Still something to categorize (nothing or only part of the amount). */
+  uncategorized: boolean
+}
+
+/** Emoji + label shown on a transaction row. */
+export function transactionRowCategory(t: Transaction, tree: CategoryTree | undefined): TransactionRowCategory {
+  const status = categorizationStatus(t, tree)
+  switch (status.kind) {
+    case 'none':
+      return { emoji: '❔', label: 'Non catégorisé', uncategorized: true }
+    case 'partial':
+      return {
+        emoji: status.main?.emoji ?? '❔',
+        label: `Partiellement catégorisé · ${formatCents(Math.abs(status.remainingCents), t.currency)} restant`,
+        uncategorized: true,
+      }
+    case 'single':
+      return { emoji: status.main?.emoji ?? '🏷️', label: status.main?.label ?? 'Catégorie', uncategorized: false }
+    case 'split':
+      return { emoji: status.main?.emoji ?? '🏷️', label: `Ventilé · ${status.count} catégories`, uncategorized: false }
+  }
+}

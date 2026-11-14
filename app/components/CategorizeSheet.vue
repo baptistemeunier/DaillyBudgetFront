@@ -2,15 +2,24 @@
 // Bottom sheet to categorize a transaction.
 // Simple: one category for the full amount. Ventiler: several (category, amount) lines;
 // a partial split is allowed — the remainder stays uncategorized.
+// Bulk (`transactions`): simple mode only, the picked category is applied to each one.
 import { ChevronLeft, Plus, Trash2, X } from 'lucide-vue-next'
-import type { Transaction } from '~/types/api'
+import type { CategoryType, Transaction } from '~/types/api'
 
-const props = defineProps<{ transaction: Transaction | null; accountId: string }>()
-const emit = defineEmits<{ close: [] }>()
+const props = defineProps<{
+  transaction?: Transaction | null
+  /** Several transactions at once (bulk, simple mode only). */
+  transactions?: Transaction[] | null
+}>()
+const emit = defineEmits<{
+  close: []
+  /** Hrefs of the transactions successfully saved. */
+  saved: [hrefs: string[]]
+}>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const { data: tree, isPending: treePending, isError: treeError, refetch: refetchTree } = useCategoriesQuery()
-const update = useUpdateSplits(() => props.accountId)
+const update = useUpdateSplits()
 
 interface Line {
   key: number
@@ -24,7 +33,26 @@ const picking = ref<number | null>(null) // index of the split line choosing its
 const error = ref<string | null>(null)
 let nextKey = 0
 
-const t = computed(() => props.transaction)
+const t = computed(() => props.transaction ?? null)
+const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
+const bulkPending = ref(false)
+
+// Category types allowed for every transaction (debits + credits mixed -> transfers only).
+const bulkTypes = computed<CategoryType[]>(() =>
+  (bulk.value ?? []).reduce<CategoryType[]>(
+    (types, tr) => types.filter((type) => allowedTypes(toCents(tr.amount)).includes(type)),
+    ['expense', 'income', 'transfer'],
+  ),
+)
+
+// Sum shown in the bulk header, only when every transaction has the same currency.
+const bulkTotal = computed(() => {
+  const items = bulk.value
+  if (!items) return null
+  const currencies = new Set(items.map((tr) => tr.currency))
+  if (currencies.size !== 1) return null
+  return { cents: items.reduce((sum, tr) => sum + toCents(tr.amount), 0), currency: items[0]!.currency }
+})
 const amountCents = computed(() => (t.value ? toCents(t.value.amount) : 0))
 const absAmount = computed(() => Math.abs(amountCents.value))
 const sign = computed(() => (amountCents.value < 0 ? -1 : 1))
@@ -73,12 +101,21 @@ const canSave = computed(
     new Set(usedIris.value).size === usedIris.value.length,
 )
 
-// (Re)initialise when a transaction is opened.
-watch(t, (transaction) => {
+// (Re)initialise when a transaction (or a bulk selection) is opened.
+watch([t, bulk], ([transaction, items]) => {
   error.value = null
   picking.value = null
-  if (!transaction) {
+  if (!transaction && !items) {
     dialog.value?.close()
+    return
+  }
+
+  if (!transaction) {
+    mode.value = 'simple'
+    lines.value = []
+    nextTick(() => {
+      if (!dialog.value?.open) dialog.value?.showModal()
+    })
     return
   }
 
@@ -123,6 +160,7 @@ async function save(splits: { category: string; amount: string }[]) {
   error.value = null
   try {
     await update.mutateAsync({ transaction: t.value, splits })
+    emit('saved', [t.value._links.self.href])
     emit('close')
   } catch (e) {
     error.value = errorMessage(e)
@@ -131,6 +169,26 @@ async function save(splits: { category: string; amount: string }[]) {
 
 function pickSimple(iri: string) {
   save([{ category: iri, amount: t.value!.amount }])
+}
+
+async function pickBulk(iri: string) {
+  const items = bulk.value
+  if (!items || bulkPending.value) return
+  error.value = null
+  bulkPending.value = true
+  try {
+    const results = await Promise.allSettled(
+      items.map((tr) => update.mutateAsync({ transaction: tr, splits: [{ category: iri, amount: tr.amount }] })),
+    )
+    const saved = items.filter((_, i) => results[i]!.status === 'fulfilled').map((tr) => tr._links.self.href)
+    emit('saved', saved)
+    const failed = items.length - saved.length
+    if (failed === 0) emit('close')
+    else
+      error.value = `${failed} transaction${failed > 1 ? 's' : ''} sur ${items.length} n'${failed > 1 ? 'ont' : 'a'} pas pu être catégorisée${failed > 1 ? 's' : ''}.`
+  } finally {
+    bulkPending.value = false
+  }
 }
 
 function saveSplit() {
@@ -156,7 +214,42 @@ function onBackdropClick(event: MouseEvent) {
     @close="emit('close')"
     @click="onBackdropClick"
   >
-    <template v-if="t">
+    <template v-if="bulk">
+      <header class="flex flex-none items-start gap-3 border-b border-slate-100 px-4 pt-4 pb-3">
+        <div class="flex min-w-0 flex-1 flex-col">
+          <h2 id="categorize-title" class="truncate text-[17px] font-bold">{{ bulk.length }} transactions</h2>
+          <p v-if="bulkTotal" class="text-[13px] text-slate-500">
+            Total ·
+            <span class="font-semibold tabular-nums" :class="bulkTotal.cents > 0 ? 'text-emerald-700' : 'text-slate-900'">
+              {{ formatSignedCents(bulkTotal.cents, bulkTotal.currency) }}
+            </span>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="-mr-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
+          aria-label="Fermer"
+          @click="emit('close')"
+        >
+          <X class="size-5" />
+        </button>
+      </header>
+
+      <div class="flex-1 overflow-y-auto px-4 py-3">
+        <p v-if="error" class="mb-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{{ error }}</p>
+
+        <div v-if="treePending" class="flex flex-col gap-2" aria-hidden="true">
+          <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded-xl bg-slate-100" />
+        </div>
+        <div v-else-if="treeError || !tree" class="flex items-center justify-between gap-3 rounded-xl bg-rose-50 px-3 py-2">
+          <span class="text-sm text-rose-800">Impossible de charger les catégories.</span>
+          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">Réessayer</button>
+        </div>
+        <CategoryPicker v-else :tree="tree" :types="bulkTypes" :selected="[]" :busy="bulkPending" @pick="pickBulk" />
+      </div>
+    </template>
+
+    <template v-else-if="t">
       <!-- Header -->
       <header class="flex flex-none items-start gap-3 border-b border-slate-100 px-4 pt-4 pb-3">
         <button

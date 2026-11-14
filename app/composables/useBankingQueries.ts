@@ -175,6 +175,20 @@ export function useTransactionsQuery(id: MaybeRefOrGetter<string>) {
   })
 }
 
+/** Every transaction not fully categorized, all accounts together, page by page. */
+export function useUncategorizedTransactionsQuery() {
+  const api = useApi()
+  return useInfiniteQuery({
+    queryKey: ['transactions', 'uncategorized'],
+    // Refetched on each visit: rows categorized last time are gone.
+    staleTime: 0,
+    initialPageParam: '',
+    queryFn: ({ pageParam }) =>
+      api<HalCollection<Transaction>>(pageParam || '/transactions?uncategorized=true&page=1'),
+    getNextPageParam: (last) => last._links.next?.href,
+  })
+}
+
 /** System + user categories, as a tree (labels from app/i18n, emojis from app/utils/categoryEmojis.ts). */
 export function useCategoriesQuery() {
   const api = useApi()
@@ -190,8 +204,8 @@ export interface SplitInput {
   amount: string // signed decimal, same sign as the transaction
 }
 
-/** Replaces the splits of a transaction and patches it in the account's transaction list. */
-export function useUpdateSplits(accountId: MaybeRefOrGetter<string>) {
+/** Replaces the splits of a transaction and patches it in every cached transaction list. */
+export function useUpdateSplits() {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
@@ -203,8 +217,8 @@ export function useUpdateSplits(accountId: MaybeRefOrGetter<string>) {
       }),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
-      queryClient.setQueryData<InfiniteData<HalCollection<Transaction>>>(
-        ['transactions', toValue(accountId)],
+      queryClient.setQueriesData<InfiniteData<HalCollection<Transaction>>>(
+        { queryKey: ['transactions'] },
         (data) =>
           data && {
             ...data,
