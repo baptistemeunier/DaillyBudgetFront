@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // Bottom sheet to categorize a transaction.
 // Simple: one category for the full amount. Ventiler: several (category, amount) lines;
-// a partial split is allowed — the remainder stays uncategorized.
+// a partial split is allowed — the remainder stays uncategorized. Both take expense / income only.
+// Transfert: to / from another account (transfer or saving categories, see TransferCategorize).
 // Bulk (`transactions`): simple mode only, the picked category is applied to each one.
 import { ChevronLeft, Plus, Trash2, X } from 'lucide-vue-next'
+import type { SplitInput } from '~/composables/useBankingQueries'
 import type { CategoryType, Transaction } from '~/types/api'
 
 const props = defineProps<{
@@ -27,7 +29,7 @@ interface Line {
   input: string // positive amount typed by the user ("12,50")
 }
 
-const mode = ref<'simple' | 'split'>('simple')
+const mode = ref<'simple' | 'split' | 'transfer'>('simple')
 const lines = ref<Line[]>([])
 const picking = ref<number | null>(null) // index of the split line choosing its category
 const error = ref<string | null>(null)
@@ -37,11 +39,11 @@ const t = computed(() => props.transaction ?? null)
 const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
 const bulkPending = ref(false)
 
-// Category types allowed for every transaction (debits + credits mixed -> transfers only).
+// Category types allowed for every transaction (debits + credits mixed -> none).
 const bulkTypes = computed<CategoryType[]>(() =>
   (bulk.value ?? []).reduce<CategoryType[]>(
     (types, tr) => types.filter((type) => allowedTypes(toCents(tr.amount)).includes(type)),
-    ['expense', 'income', 'transfer'],
+    ['expense', 'income'],
   ),
 )
 
@@ -111,7 +113,14 @@ watch([t, bulk], ([transaction, items]) => {
     input: centsToInput(Math.abs(toCents(s.amount)), true),
   }))
   const status = categorizationStatus(transaction, tree.value)
-  mode.value = status.kind === 'split' || status.kind === 'partial' ? 'split' : 'simple'
+  const isTransfer = splits.some((s) => {
+    const iri = splitCategoryIri(s)
+    const type = iri ? tree.value?.byIri.get(iri)?.type : undefined
+    return !!type && TRANSFER_TYPES.includes(type)
+  })
+  mode.value = isTransfer ? 'transfer' : status.kind === 'split' || status.kind === 'partial' ? 'split' : 'simple'
+  // Transfer / saving lines aren't editable in Ventiler.
+  if (isTransfer) lines.value = []
 
   nextTick(() => {
     if (!dialog.value?.open) dialog.value?.showModal()
@@ -138,7 +147,7 @@ function errorMessage(e: unknown): string {
   return apiErrorMessage(e)
 }
 
-async function save(splits: { category: string; amount: string }[]) {
+async function save(splits: SplitInput[]) {
   if (!t.value) return
   error.value = null
   try {
@@ -228,6 +237,9 @@ function onBackdropClick(event: MouseEvent) {
           <span class="text-sm text-rose-800">Impossible de charger les catégories.</span>
           <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">Réessayer</button>
         </div>
+        <p v-else-if="!bulkTypes.length" class="rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-800">
+          Cette sélection mélange débits et crédits : catégorise-les séparément.
+        </p>
         <CategoryPicker v-else :tree="tree" :types="bulkTypes" :selected="[]" :busy="bulkPending" @pick="pickBulk" />
       </div>
     </template>
@@ -268,7 +280,7 @@ function onBackdropClick(event: MouseEvent) {
 
       <!-- Mode switch -->
       <div v-if="picking === null" class="flex-none px-4 pt-3">
-        <div class="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-semibold" role="tablist">
+        <div class="grid grid-cols-3 rounded-xl bg-slate-100 p-1 text-sm font-semibold" role="tablist">
           <button
             type="button"
             role="tab"
@@ -288,6 +300,16 @@ function onBackdropClick(event: MouseEvent) {
             @click="mode = 'split'"
           >
             Ventiler
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="mode === 'transfer'"
+            class="min-h-10 rounded-lg"
+            :class="mode === 'transfer' ? 'bg-white shadow-sm' : 'text-slate-500'"
+            @click="mode = 'transfer'"
+          >
+            Transfert
           </button>
         </div>
       </div>
@@ -312,6 +334,15 @@ function onBackdropClick(event: MouseEvent) {
           :selected="lines[picking]?.category ? [lines[picking]!.category!] : []"
           :disabled="usedIris"
           @pick="pickForLine"
+        />
+
+        <!-- Transfert -->
+        <TransferCategorize
+          v-else-if="mode === 'transfer'"
+          :transaction="t"
+          :tree="tree"
+          :pending="update.isPending.value"
+          @save="save"
         />
 
         <!-- Simple -->

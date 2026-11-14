@@ -70,5 +70,5 @@ export const CATEGORY_LABELS_FR: Record<string, string> = {
   "income.other": "Autres revenus",
   "internal": "Mouvements internes",
   "internal.transfers": "Virements entre comptes",
-  "internal.savings": "Épargne & placements",
+  "saving": "Épargne",
 }

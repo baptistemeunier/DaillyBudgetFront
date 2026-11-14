@@ -31,7 +31,12 @@ const orphans = computed(() => {
       const href = account._links['account-connection']?.href
       const connectionId = href ? halId({ _links: { self: { href } } }) : null
       if (connectionId && listed.has(connectionId)) return null
-      return { account, note: connectionId ? 'Connexion supprimée' : 'Sans connexion' }
+      const note = account.manual
+        ? ACCOUNT_TYPE_LABELS[account.type]
+        : connectionId
+          ? 'Connexion supprimée'
+          : 'Sans connexion'
+      return { account, note }
     })
     .filter((o) => o !== null)
 })
@@ -138,10 +143,11 @@ const setOpen = (id: string, value: boolean) => {
           :key="account._links.self.href"
           :account="account"
           :note="note"
-          muted
+          :muted="!account.manual"
         >
           <template #leading>
-            <BankLogo :href="account._links.bank?.href" />
+            <AccountTypeIcon v-if="account.manual" :type="account.type" />
+            <BankLogo v-else :href="account._links.bank?.href" />
           </template>
         </AccountRow>
       </div>

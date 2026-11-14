@@ -45,7 +45,18 @@ export interface Account extends HalResource {
   /** Date the bank reports the balance for. */
   balanceAt: string | null
   type: AccountType
+  /** Created by hand (POST /accounts): no bank, no sync, savings or investment only. */
+  manual?: boolean
   _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink }
+}
+
+/** POST /accounts: manual account, starting with an initial transaction. */
+export interface CreateManualAccountInput {
+  name: string
+  type: Exclude<AccountType, 'checking'>
+  currency: string
+  initialBalance: string // decimal, e.g. "12400.00"
+  initialBalanceAt: string // YYYY-MM-DD
 }
 
 export interface Transaction extends HalResource {
@@ -68,10 +79,11 @@ export interface Transaction extends HalResource {
 export interface TransactionSplit {
   amount: string
   category?: string | null | { _links?: { self?: HalLink } }
-  _links?: { category?: HalLink }
+  /** Saving split towards a manual account: its mirror transaction and that account. */
+  _links?: { category?: HalLink; counterpartTransaction?: HalLink; counterpartAccount?: HalLink }
 }
 
-export type CategoryType = 'expense' | 'income' | 'transfer'
+export type CategoryType = 'expense' | 'income' | 'transfer' | 'saving'
 
 export interface Category extends HalResource {
   code: string | null

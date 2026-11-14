@@ -3,10 +3,13 @@
 import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
 import type { Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
 
-/** Credit: income / internal transfers. Debit: expenses / internal transfers. */
+/** Simple / split categorization: income for a credit, expenses for a debit (transfer and saving go through the Transfert tab). */
 export function allowedTypes(amountCents: number): CategoryType[] {
-  return amountCents > 0 ? ['income', 'transfer'] : ['expense', 'transfer']
+  return amountCents > 0 ? ['income'] : ['expense']
 }
+
+/** Category types handled by the Transfert tab. */
+export const TRANSFER_TYPES: CategoryType[] = ['transfer', 'saving']
 
 export interface CategoryNode {
   iri: string

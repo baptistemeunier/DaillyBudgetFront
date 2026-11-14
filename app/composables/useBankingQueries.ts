@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, AccountType, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
 
 export function useConnectionsQuery() {
   const api = useApi()
@@ -153,6 +153,19 @@ export function useDeleteConnection() {
   })
 }
 
+/** Creates a manual account (savings / investment) with its initial balance. */
+export function useCreateManualAccount() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateManualAccountInput) => api<Account>('/accounts', { method: 'POST', body: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account'] })
+    },
+  })
+}
+
 /** Renames an account or changes its type. */
 export function useUpdateAccount() {
   const api = useApi()
@@ -225,6 +238,10 @@ export function useCategoriesQuery() {
 export interface SplitInput {
   category: string // IRI
   amount: string // signed decimal, same sign as the transaction
+  /** Saving split only: manual account (IRI) that receives the mirror transaction. */
+  counterpartAccount?: string
+  /** With counterpartAccount in another currency: amount received there (opposite sign). */
+  counterpartAmount?: string
 }
 
 /** Replaces the splits of a transaction and patches it in every cached transaction list. */
@@ -238,9 +255,21 @@ export function useUpdateSplits() {
         body: { splits },
         headers: { 'Content-Type': 'application/merge-patch+json' },
       }),
-    onSuccess: (updated) => {
+    onSuccess: (updated, { transaction, splits }) => {
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
       queryClient.invalidateQueries({ queryKey: ['statement'] })
+      // Saving towards a manual account (now or before): its mirror transaction and balance changed.
+      const counterparts = new Set(
+        [
+          ...splits.map((s) => s.counterpartAccount),
+          ...(transaction.splits ?? []).map((s) => s._links?.counterpartAccount?.href),
+        ].filter((a): a is string => !!a),
+      )
+      if (counterparts.size) {
+        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+        queryClient.invalidateQueries({ queryKey: ['account'] })
+        for (const iri of counterparts) queryClient.invalidateQueries({ queryKey: ['transactions', iriId(iri)] })
+      }
       queryClient.setQueriesData<InfiniteData<HalCollection<Transaction>>>(
         { queryKey: ['transactions'] },
         (data) =>

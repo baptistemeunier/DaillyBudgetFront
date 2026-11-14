@@ -16,6 +16,7 @@ export const ROOT_CATEGORY_EMOJIS: Record<string, string> = {
   "misc": "❓",
   "income": "💰",
   "internal": "🔁",
+  "saving": "🐷",
 }
 
 export const DEFAULT_CATEGORY_EMOJI = '🏷️'
