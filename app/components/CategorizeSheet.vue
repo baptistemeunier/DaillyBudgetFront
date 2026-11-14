@@ -23,6 +23,11 @@ const dialog = ref<HTMLDialogElement | null>(null)
 const { data: tree, isPending: treePending, isError: treeError, refetch: refetchTree } = useCategoriesQuery()
 const update = useUpdateSplits()
 
+// Type of the transaction's account: savings / investment accounts also take saving categories.
+const { data: accounts } = useAllAccountsQuery()
+const accountTypeOf = (tr: Transaction) =>
+  accounts.value?.find((a) => a._links.self.href === tr._links.account?.href)?.type ?? null
+
 interface Line {
   key: number
   category: string | null
@@ -39,11 +44,11 @@ const t = computed(() => props.transaction ?? null)
 const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
 const bulkPending = ref(false)
 
-// Category types allowed for every transaction (debits + credits mixed -> none).
+// Category types allowed for every transaction (debits + credits, or savings + checking accounts mixed -> none).
 const bulkTypes = computed<CategoryType[]>(() =>
   (bulk.value ?? []).reduce<CategoryType[]>(
-    (types, tr) => types.filter((type) => allowedTypes(toCents(tr.amount)).includes(type)),
-    ['expense', 'income'],
+    (types, tr) => types.filter((type) => allowedTypes(toCents(tr.amount), accountTypeOf(tr)).includes(type)),
+    ['expense', 'income', 'saving'],
   ),
 )
 
@@ -56,6 +61,7 @@ const bulkTotal = computed(() => {
   return { cents: items.reduce((sum, tr) => sum + toCents(tr.amount), 0), currency: items[0]!.currency }
 })
 const amountCents = computed(() => (t.value ? toCents(t.value.amount) : 0))
+const types = computed(() => (t.value ? allowedTypes(amountCents.value, accountTypeOf(t.value)) : []))
 const absAmount = computed(() => Math.abs(amountCents.value))
 const sign = computed(() => (amountCents.value < 0 ? -1 : 1))
 const currency = computed(() => t.value?.currency ?? 'EUR')
@@ -113,10 +119,13 @@ watch([t, bulk], ([transaction, items]) => {
     input: centsToInput(Math.abs(toCents(s.amount)), true),
   }))
   const status = categorizationStatus(transaction, tree.value)
+  // Transfert tab: a transfer, or a saving towards another account (with a mirror, or from a checking account).
+  const savingAccount = accountTypeOf(transaction) !== null && accountTypeOf(transaction) !== 'checking'
   const isTransfer = splits.some((s) => {
     const iri = splitCategoryIri(s)
     const type = iri ? tree.value?.byIri.get(iri)?.type : undefined
-    return !!type && TRANSFER_TYPES.includes(type)
+    if (type === 'transfer') return true
+    return type === 'saving' && (!!s._links?.counterpartAccount || !savingAccount)
   })
   mode.value = isTransfer ? 'transfer' : status.kind === 'split' || status.kind === 'partial' ? 'split' : 'simple'
   // Transfer / saving lines aren't editable in Ventiler.
@@ -238,7 +247,8 @@ function onBackdropClick(event: MouseEvent) {
           <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">Réessayer</button>
         </div>
         <p v-else-if="!bulkTypes.length" class="rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-800">
-          Cette sélection mélange débits et crédits : catégorise-les séparément.
+          Ces transactions n'ont pas de catégorie en commun (débits et crédits, ou comptes courants et d'épargne
+          mélangés) : catégorise-les séparément.
         </p>
         <CategoryPicker v-else :tree="tree" :types="bulkTypes" :selected="[]" :busy="bulkPending" @pick="pickBulk" />
       </div>
@@ -330,7 +340,7 @@ function onBackdropClick(event: MouseEvent) {
         <CategoryPicker
           v-else-if="picking !== null"
           :tree="tree"
-          :types="allowedTypes(amountCents)"
+          :types="types"
           :selected="lines[picking]?.category ? [lines[picking]!.category!] : []"
           :disabled="usedIris"
           @pick="pickForLine"
@@ -349,7 +359,7 @@ function onBackdropClick(event: MouseEvent) {
         <template v-else-if="mode === 'simple'">
           <CategoryPicker
             :tree="tree"
-            :types="allowedTypes(amountCents)"
+            :types="types"
             :selected="currentIris.length === 1 ? currentIris : []"
             :busy="update.isPending.value"
             @pick="pickSimple"

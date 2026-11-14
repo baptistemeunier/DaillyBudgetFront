@@ -185,6 +185,7 @@ function back() {
             <li v-for="t in group.items" :key="t._links.self.href">
               <TransactionRow
                 :transaction="t"
+                show-account
                 :selectable="selecting && isTodo(t)"
                 :selected="selection.has(t._links.self.href)"
                 @select="onRowSelect(t)"

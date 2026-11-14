@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // Searchable category tree, drill-down: tapping a parent opens its sub-categories
-// ("Toute la catégorie" picks the parent itself). A parent without children is picked directly.
+// ("Toute la catégorie" picks the parent itself). A parent without children is picked directly,
+// except "Épargne": it opens so envelopes (sub-categories) can be created.
+// A single offered parent that opens (Épargne on a savings account) is shown opened, without the way back.
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from 'lucide-vue-next'
 import type { CategoryType } from '~/types/api'
 import type { CategoryNode, CategoryTree } from '~/utils/categories'
@@ -20,8 +22,14 @@ const emit = defineEmits<{ pick: [iri: string] }>()
 const isVisible = (node: CategoryNode) => !props.types || props.types.includes(node.type)
 const visibleRoots = computed(() => props.tree.roots.filter(isVisible))
 
+const opens = (root: CategoryNode) => root.children.length > 0 || root.type === 'saving'
+const onlyRoot = computed(() => {
+  const roots = visibleRoots.value
+  return roots.length === 1 && opens(roots[0]!) ? roots[0]! : null
+})
+
 const search = ref('')
-const openRootIri = ref<string | null>(null)
+const openRootIri = ref<string | null>(onlyRoot.value?.iri ?? null)
 const openRoot = computed(() => (openRootIri.value ? props.tree.byIri.get(openRootIri.value) : undefined))
 
 // Start inside the parent of the current selection (if that parent is offered here).
@@ -43,7 +51,7 @@ const isDisabled = (iri: string) => props.busy || ((props.disabled?.includes(iri
 const hasSelectedChild = (root: CategoryNode) => root.children.some((c) => isSelected(c.iri))
 
 function onRoot(root: CategoryNode) {
-  if (root.children.length) openRootIri.value = root.iri
+  if (opens(root)) openRootIri.value = root.iri
   else emit('pick', root.iri)
 }
 
@@ -119,6 +127,7 @@ async function submitCreate() {
     <!-- Sub-categories of the opened parent -->
     <div v-else-if="openRoot" class="flex flex-col gap-2">
       <button
+        v-if="!onlyRoot"
         type="button"
         class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
         @click="openRootIri = null"
@@ -209,7 +218,7 @@ async function submitCreate() {
         <button
           type="button"
           class="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-slate-50 disabled:opacity-40"
-          :disabled="!root.children.length && isDisabled(root.iri)"
+          :disabled="!opens(root) && isDisabled(root.iri)"
           @click="onRoot(root)"
         >
           <span class="flex size-9 flex-none items-center justify-center rounded-full bg-slate-100" aria-hidden="true">
@@ -221,7 +230,7 @@ async function submitCreate() {
             class="size-5 text-indigo-600"
             aria-label="Sélectionnée"
           />
-          <ChevronRight v-if="root.children.length" class="size-4 flex-none text-slate-400" aria-hidden="true" />
+          <ChevronRight v-if="opens(root)" class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </button>
       </li>
     </ul>

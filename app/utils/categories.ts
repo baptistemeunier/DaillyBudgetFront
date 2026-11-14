@@ -1,15 +1,16 @@
 // Category tree built from GET /categories. The API owns the type; labels (i18n)
 // and emojis are presentation, kept in front tables indexed by code.
 import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
-import type { Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
+import type { AccountType, Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
 
-/** Simple / split categorization: income for a credit, expenses for a debit (transfer and saving go through the Transfert tab). */
-export function allowedTypes(amountCents: number): CategoryType[] {
+/**
+ * Simple / split categorization: income for a credit, expenses for a debit; on a savings / investment
+ * account, saving categories only (envelopes). Transfers to another account go through the Transfert tab.
+ */
+export function allowedTypes(amountCents: number, accountType?: AccountType | null): CategoryType[] {
+  if (accountType && accountType !== 'checking') return ['saving']
   return amountCents > 0 ? ['income'] : ['expense']
 }
-
-/** Category types handled by the Transfert tab. */
-export const TRANSFER_TYPES: CategoryType[] = ['transfer', 'saving']
 
 export interface CategoryNode {
   iri: string
