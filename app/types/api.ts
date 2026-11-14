@@ -17,6 +17,8 @@ export interface HalCollection<T> {
 
 export type RequisitionStatus = 'CR' | 'GC' | 'UA' | 'RJ' | 'SA' | 'GA' | 'LN' | 'EX' | 'SU'
 export type AccountSyncStatus = 'PENDING' | 'IN_PROGRESS' | 'FAILED' | 'SUCCESS'
+/** Account kind, guessed at the first sync and editable. Only checking accounts count in the budget. */
+export type AccountType = 'checking' | 'savings' | 'investment'
 
 export interface AccountConnection extends HalResource {
   externalId: string
@@ -42,6 +44,7 @@ export interface Account extends HalResource {
   balanceType: string | null
   /** Date the bank reports the balance for. */
   balanceAt: string | null
+  type: AccountType
   _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink }
 }
 

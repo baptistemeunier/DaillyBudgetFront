@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { Plus } from 'lucide-vue-next'
+import { CircleUserRound, Plus, RefreshCw } from 'lucide-vue-next'
 
 definePageMeta({ tabs: true })
 
 const { data: connections, isPending, isError, refetch } = useConnectionsQuery()
 const { data: allAccounts } = useAllAccountsQuery()
+
+// Refresh button: sync every linked connection.
+const sync = useSyncConnection()
+const syncingAll = ref(false)
+async function syncAll() {
+  if (syncingAll.value || !connections.value) return
+  syncingAll.value = true
+  try {
+    await Promise.allSettled(
+      connections.value.filter((c) => c.externalStatus === 'LN').map((c) => sync.mutateAsync(halId(c))),
+    )
+  } finally {
+    syncingAll.value = false
+  }
+}
 
 // Accounts not shown in any connection card: no connection at all, or a
 // connection that was (soft-)deleted and is no longer listed.
@@ -50,9 +65,28 @@ const setOpen = (id: string, value: boolean) => {
 
 <template>
   <main class="flex flex-col gap-5 px-4 pt-6 pb-24">
-    <header class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Mes comptes</h1>
-    </header>
+    <PageHeader title="Mes comptes">
+      <template #leading>
+        <NuxtLink
+          to="/profile"
+          class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
+          aria-label="Mon profil"
+        >
+          <CircleUserRound class="size-6" />
+        </NuxtLink>
+      </template>
+      <template #trailing>
+        <button
+          type="button"
+          class="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60"
+          aria-label="Synchroniser les comptes"
+          :disabled="syncingAll || !connections?.length"
+          @click="syncAll"
+        >
+          <RefreshCw class="size-5" :class="{ 'animate-spin': syncingAll }" />
+        </button>
+      </template>
+    </PageHeader>
 
     <TodoCarousel />
 

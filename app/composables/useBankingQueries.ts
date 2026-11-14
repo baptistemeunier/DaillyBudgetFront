@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { Account, AccountConnection, AccountType, Bank, Category, HalCollection, Transaction, UserAction } from '~/types/api'
 
 export function useConnectionsQuery() {
   const api = useApi()
@@ -134,6 +134,9 @@ export function useSyncConnection() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['account_connections'] })
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+      // Accounts switch to PENDING: refetch so their polling starts.
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account'] })
     },
   })
 }
@@ -146,6 +149,26 @@ export function useDeleteConnection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account_connections'] })
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+    },
+  })
+}
+
+/** Renames an account or changes its type. */
+export function useUpdateAccount() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ account, changes }: { account: Account; changes: { displayName?: string | null; type?: AccountType } }) =>
+      api<Account>(account._links.self.href, {
+        method: 'PATCH',
+        body: changes,
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account'] })
+      // The type decides whether the account counts in the budget.
+      queryClient.invalidateQueries({ queryKey: ['statement'] })
     },
   })
 }
