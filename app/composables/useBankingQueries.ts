@@ -217,6 +217,7 @@ export function useUpdateSplits() {
       }),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+      queryClient.invalidateQueries({ queryKey: ['statement'] })
       queryClient.setQueriesData<InfiniteData<HalCollection<Transaction>>>(
         { queryKey: ['transactions'] },
         (data) =>

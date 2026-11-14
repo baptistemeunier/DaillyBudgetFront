@@ -51,6 +51,7 @@ export interface Transaction extends HalResource {
   isBooked: boolean
   /** Categorized when the sum equals `amount`; the difference is uncategorized. */
   splits?: TransactionSplit[]
+  _links: HalResource['_links'] & { account?: HalLink }
 }
 
 /**
@@ -115,4 +116,46 @@ export interface Budget extends HalResource {
   lines: BudgetLine[]
   allocatedAmount?: string | null
   unallocatedAmount?: string | null
+}
+
+/** Amount of a root category over a statement period. */
+export interface StatementLine {
+  category?: string | null | { _links?: { self?: HalLink } }
+  _links?: { category?: HalLink }
+  /** Spent (expenses) or received (income), positive for a normal flow. */
+  amount: string
+  /** Prorated budget of the category; 0.00 outside the budget, absent for income. */
+  targetAmount?: string | null
+  transactionCount?: number
+}
+
+/** Expenses and income over whole months, compared to the budget (GET /statements/{period}). */
+export interface Statement extends HalResource {
+  period: string
+  from: string
+  to: string
+  months: number
+  currency: string
+  /** Budget × number of months (0.00 without budget). */
+  targetAmount: string
+  amount: string
+  lines: StatementLine[]
+  unbudgetedAmount: string
+  uncategorizedAmount: string
+  uncategorizedCount?: number
+  incomeAmount: string
+  income: StatementLine[]
+  uncategorizedIncomeAmount: string
+  uncategorizedIncomeCount?: number
+  /** One entry per category (sub-category or root) with splits, expenses and income; grouped by `parent`. */
+  details?: StatementDetail[]
+}
+
+/** Amount of a single category over a statement period; a split made on a root has category = parent = root. */
+export interface StatementDetail {
+  category?: string | null | { _links?: { self?: HalLink } }
+  parent?: string | null | { _links?: { self?: HalLink } }
+  _links?: { category?: HalLink; parent?: HalLink }
+  amount: string
+  transactionCount?: number
 }

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 // Monthly budget: one total, split across the root expense categories.
 // An empty category field means 0: no line is sent for it.
-import { CircleAlert, CircleCheck } from 'lucide-vue-next'
+import { ChevronLeft, CircleAlert, CircleCheck } from 'lucide-vue-next'
 import type { BudgetLineInput } from '~/types/api'
 
-definePageMeta({ tabs: true })
+const router = useRouter()
+
+function back() {
+  if (window.history.state?.back) router.back()
+  else router.push('/budget')
+}
 
 const { data: budget, isPending: budgetPending, isError: budgetError, refetch: refetchBudget } =
   useBudgetQuery()
@@ -77,8 +82,6 @@ const canSave = computed(
 )
 
 const error = ref<string | null>(null)
-const savedNotice = ref(false)
-let noticeTimer: ReturnType<typeof setTimeout> | undefined
 
 async function submit() {
   if (!canSave.value) return
@@ -87,14 +90,11 @@ async function submit() {
     const body = payload.value
     await save.mutateAsync({ budget: budget.value ?? null, ...body })
     initialPayload.value = JSON.stringify(body)
-    savedNotice.value = true
-    clearTimeout(noticeTimer)
-    noticeTimer = setTimeout(() => (savedNotice.value = false), 3000)
+    back()
   } catch (e) {
     error.value = apiErrorStatus(e) === 403 ? "Vous n'avez pas le droit de modifier ce budget." : apiErrorMessage(e)
   }
 }
-onBeforeUnmount(() => clearTimeout(noticeTimer))
 
 const loading = computed(() => budgetPending.value || treePending.value)
 const loadError = computed(() => budgetError.value || treeError.value)
@@ -108,11 +108,19 @@ function retry() {
 <template>
   <div class="min-h-dvh">
     <!-- Indigo band, the first card overlaps it -->
-    <header class="h-32 bg-indigo-600 px-4 pt-8">
-      <h1 class="text-xl font-bold text-white">Mon budget</h1>
+    <header class="flex h-32 items-start gap-2 bg-indigo-600 px-4 pt-6">
+      <button
+        type="button"
+        class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full text-white hover:bg-white/10"
+        aria-label="Retour"
+        @click="back"
+      >
+        <ChevronLeft class="size-5" />
+      </button>
+      <h1 class="pt-2 text-xl font-bold text-white">Mon budget</h1>
     </header>
 
-    <main class="-mt-12 flex flex-col gap-4 px-4 pb-44">
+    <main class="-mt-12 flex flex-col gap-4 px-4 pb-28">
       <template v-if="loading">
         <div class="h-40 animate-pulse rounded-3xl bg-white shadow-sm" aria-hidden="true" />
         <div class="h-80 animate-pulse rounded-3xl bg-white shadow-sm" aria-hidden="true" />
@@ -205,10 +213,9 @@ function retry() {
     <!-- Save bar, above the bottom nav -->
     <div
       v-if="!loading && !loadError"
-      class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur"
+      class="fixed inset-x-0 bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md border-t border-slate-200 bg-white/95 px-4 pt-3 backdrop-blur"
     >
       <p v-if="error" class="mb-2 text-sm text-rose-800" role="alert">{{ error }}</p>
-      <p v-else-if="savedNotice" class="mb-2 text-sm font-semibold text-emerald-700" role="status">Budget enregistré</p>
       <button
         type="button"
         class="h-12 w-full rounded-full bg-indigo-600 text-[15px] font-semibold text-white disabled:opacity-40"

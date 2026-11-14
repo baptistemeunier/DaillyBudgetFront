@@ -1,7 +1,7 @@
 // Category tree built from GET /categories. The API owns the type; labels (i18n)
 // and emojis are presentation, kept in front tables indexed by code.
 import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
-import type { Category, CategoryType, Transaction, TransactionSplit } from '~/types/api'
+import type { Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
 
 /** Credit: income / internal transfers. Debit: expenses / internal transfers. */
 export function allowedTypes(amountCents: number): CategoryType[] {
@@ -80,6 +80,21 @@ export function buildCategoryTree(categories: Category[], locale: CategoryLocale
 export function splitCategoryIri(split: TransactionSplit): string | null {
   if (typeof split.category === 'string') return split.category
   return split.category?._links?.self?.href ?? split._links?.category?.href ?? null
+}
+
+/** IRIs of a statement detail, whatever the HAL rendering. */
+export function detailIris(detail: StatementDetail): { category: string | null; parent: string | null } {
+  const read = (rel: 'category' | 'parent') => {
+    const value = detail[rel]
+    if (typeof value === 'string') return value
+    return value?._links?.self?.href ?? detail._links?.[rel]?.href ?? null
+  }
+  return { category: read('category'), parent: read('parent') }
+}
+
+/** IRI -> id ("/categories/abc" -> "abc"). */
+export function iriId(iri: string): string {
+  return iri.split('?')[0]!.split('/').filter(Boolean).pop() ?? ''
 }
 
 export type CategorizationStatus =

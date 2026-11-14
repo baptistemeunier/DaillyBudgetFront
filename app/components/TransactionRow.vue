@@ -7,12 +7,27 @@ const props = defineProps<{
   /** Selection mode: a check circle replaces the emoji and the row toggles. */
   selectable?: boolean
   selected?: boolean
+  /** Subtitle = "Account · Bank" instead of the category. */
+  showAccount?: boolean
 }>()
 defineEmits<{ select: [] }>()
 
 const { data: tree } = useCategoriesQuery()
 const row = computed(() => transactionRowCategory(props.transaction, tree.value))
 const cents = computed(() => toCents(props.transaction.amount))
+
+// Account label (only when asked): the account list is cached, banks too.
+const { data: accounts } = useAllAccountsQuery()
+const accountHref = computed(() =>
+  props.showAccount ? (props.transaction._links.account?.href ?? null) : null,
+)
+const account = computed(() =>
+  accountHref.value ? accounts.value?.find((a) => a._links.self.href === accountHref.value) : undefined,
+)
+const { data: bank } = useBankQuery(() => account.value?._links.bank?.href)
+const accountLabel = computed(() =>
+  account.value ? [accountName(account.value), bank.value?.name].filter(Boolean).join(' · ') : '',
+)
 </script>
 
 <template>
@@ -47,7 +62,8 @@ const cents = computed(() => toCents(props.transaction.amount))
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="truncate text-[15px] font-medium">{{ transaction.description }}</span>
-      <span class="truncate text-[13px]" :class="row.uncategorized ? 'text-amber-700' : 'text-slate-500'">
+      <span v-if="showAccount" class="truncate text-[13px] text-slate-500">{{ accountLabel }}</span>
+      <span v-else class="truncate text-[13px]" :class="row.uncategorized ? 'text-amber-700' : 'text-slate-500'">
         {{ row.label }}
       </span>
     </span>
