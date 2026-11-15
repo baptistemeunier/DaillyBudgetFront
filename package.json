@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxtjs/i18n": "^10.6.0",
     "@tanstack/vue-query": "^5.107.1",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.6.4",

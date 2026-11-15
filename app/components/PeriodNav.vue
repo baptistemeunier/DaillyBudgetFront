@@ -10,7 +10,7 @@ defineEmits<{ shift: [direction: -1 | 1] }>()
     <button
       type="button"
       class="flex size-11 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200"
-      aria-label="Période précédente"
+      :aria-label="$t('period.previous')"
       @click="$emit('shift', -1)"
     >
       <ChevronLeft class="size-5" />
@@ -19,7 +19,7 @@ defineEmits<{ shift: [direction: -1 | 1] }>()
     <button
       type="button"
       class="flex size-11 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 disabled:text-slate-300"
-      aria-label="Période suivante"
+      :aria-label="$t('period.next')"
       :disabled="!canGoNext"
       @click="$emit('shift', 1)"
     >

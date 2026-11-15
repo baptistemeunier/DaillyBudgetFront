@@ -13,17 +13,17 @@ const manualAccounts = computed(() => (allAccounts.value ?? []).filter((a) => a.
 
 <template>
   <main class="flex flex-col gap-5 px-4 pt-6 pb-10">
-    <PageHeader title="Mes comptes" back="/profile" />
+    <PageHeader :title="$t('home.title')" back="/profile" />
 
     <section class="flex flex-col gap-2" aria-labelledby="connections-title">
       <h2 id="connections-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-        Connexions bancaires
+        {{ $t('profile.bankConnections') }}
       </h2>
 
       <div v-if="isError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger vos banques.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadYourBanks') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
@@ -51,18 +51,18 @@ const manualAccounts = computed(() => (allAccounts.value ?? []).filter((a) => a.
           <span class="flex size-8 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-700" aria-hidden="true">
             <Plus class="size-5" />
           </span>
-          <span class="text-[15px] font-semibold text-indigo-700">Ajouter une banque</span>
+          <span class="text-[15px] font-semibold text-indigo-700">{{ $t('banks.add') }}</span>
         </NuxtLink>
       </div>
     </section>
 
     <section class="flex flex-col gap-2" aria-labelledby="manual-title">
-      <h2 id="manual-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Comptes manuels</h2>
+      <h2 id="manual-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">{{ $t('profile.manualAccounts') }}</h2>
 
       <div v-if="accountsError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger vos comptes.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadYourAccounts') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetchAccounts()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
@@ -80,7 +80,7 @@ const manualAccounts = computed(() => (allAccounts.value ?? []).filter((a) => a.
         >
           <AccountTypeIcon :type="account.type" small />
           <span class="min-w-0 flex-1 truncate text-[15px] font-medium">{{ accountName(account) }}</span>
-          <span class="text-[13px] text-slate-500">{{ ACCOUNT_TYPE_LABELS[account.type] }}</span>
+          <span class="text-[13px] text-slate-500">{{ accountTypeLabel(account.type) }}</span>
           <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </NuxtLink>
 
@@ -88,7 +88,7 @@ const manualAccounts = computed(() => (allAccounts.value ?? []).filter((a) => a.
           <span class="flex size-8 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-700" aria-hidden="true">
             <Plus class="size-5" />
           </span>
-          <span class="text-[15px] font-semibold text-indigo-700">Ajouter un compte manuel</span>
+          <span class="text-[15px] font-semibold text-indigo-700">{{ $t('profile.addManualAccount') }}</span>
         </NuxtLink>
       </div>
     </section>

@@ -7,6 +7,7 @@ import type { StatementRowView } from '~/types/statement'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const id = computed(() => String(route.params.id))
 
 const { view, query: periodQuery, shift, canGoNext, period, label } = useStatementPeriod()
@@ -61,7 +62,7 @@ const rows = computed<StatementRowView[]>(() => {
 
   const result = r.children.map((child) => row(child.iri, child.label, child.icon))
   // Splits made directly on the root (no sub-category)
-  if (byCategory.has(r.iri)) result.push(row(r.iri, `${r.label} (sans sous-catégorie)`, r.icon))
+  if (byCategory.has(r.iri)) result.push(row(r.iri, t('budgetCategory.rootDirect', { label: r.label }), r.icon))
   return result.sort((a, b) => b.cents - a.cents)
 })
 
@@ -77,7 +78,7 @@ function back() {
       <button
         type="button"
         class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-        aria-label="Retour"
+        :aria-label="$t('common.back')"
         @click="back"
       >
         <ChevronLeft class="size-5" />
@@ -90,7 +91,7 @@ function back() {
       >
         <component :is="root.icon" v-if="root" class="size-5" :style="{ color }" />
       </span>
-      <h1 class="truncate text-xl font-bold">{{ root?.label ?? 'Catégorie' }}</h1>
+      <h1 class="truncate text-xl font-bold">{{ root?.label ?? $t('common.category') }}</h1>
     </header>
 
     <!-- Period + total -->
@@ -103,7 +104,7 @@ function back() {
         <div class="flex items-baseline justify-between gap-2">
           <span class="text-[32px] leading-tight font-bold tabular-nums">{{ formatCents(totalCents, currency) }}</span>
           <span v-if="targetCents > 0" class="text-[13px] text-slate-500 tabular-nums">
-            sur {{ formatCents(targetCents, currency) }}
+            {{ $t('budget.of', { amount: formatCents(targetCents, currency) }) }}
           </span>
         </div>
         <template v-if="targetCents > 0">
@@ -116,10 +117,12 @@ function back() {
           </span>
           <span class="flex items-center justify-between text-[13px]">
             <span class="text-slate-500">
-              <template v-if="targetCents >= totalCents">Reste {{ formatCents(targetCents - totalCents, currency) }}</template>
-              <template v-else>Dépassé de {{ formatCents(totalCents - targetCents, currency) }}</template>
+              <template v-if="targetCents >= totalCents">
+                {{ $t('budget.left', { amount: formatCents(targetCents - totalCents, currency) }) }}
+              </template>
+              <template v-else>{{ $t('budget.overBy', { amount: formatCents(totalCents - targetCents, currency) }) }}</template>
             </span>
-            <span class="font-semibold tabular-nums" :class="budgetStatusText(ratio)">{{ Math.round(ratio * 100) }} %</span>
+            <span class="font-semibold tabular-nums" :class="budgetStatusText(ratio)">{{ $t('common.percent', { n: Math.round(ratio * 100) }) }}</span>
           </span>
         </template>
         <template v-else>
@@ -127,15 +130,17 @@ function back() {
           <span v-if="isExpenses && totalCents > 0" class="block h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
             <span class="block h-full w-full rounded-full bg-rose-500" />
           </span>
-          <span class="text-[13px] text-slate-500">{{ isExpenses ? 'Dépensé' : 'Reçu' }} · hors budget</span>
+          <span class="text-[13px] text-slate-500">
+            {{ isExpenses ? $t('budget.spent') : $t('budget.received') }} · {{ $t('budgetCategory.outsideBudget') }}
+          </span>
         </template>
       </div>
     </section>
 
     <div v-if="isError" class="flex items-center justify-between gap-3 rounded-3xl bg-rose-50 px-4 py-4">
-      <span class="text-sm text-rose-800">Impossible de charger la catégorie.</span>
+      <span class="text-sm text-rose-800">{{ $t('errors.loadCategory') }}</span>
       <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-        Réessayer
+        {{ $t('common.retry') }}
       </button>
     </div>
 
@@ -146,8 +151,8 @@ function back() {
       :class="{ 'opacity-60': isPlaceholderData }"
       aria-labelledby="sub-title"
     >
-      <h2 id="sub-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Sous-catégories</h2>
-      <p v-if="!rows.length" class="py-6 text-center text-sm text-slate-500">Aucune sous-catégorie.</p>
+      <h2 id="sub-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">{{ $t('budgetCategory.subCategories') }}</h2>
+      <p v-if="!rows.length" class="py-6 text-center text-sm text-slate-500">{{ $t('budgetCategory.noSub') }}</p>
       <ul v-else class="divide-y divide-slate-100">
         <li v-for="row in rows" :key="row.key">
           <StatementRow :row="row" share />

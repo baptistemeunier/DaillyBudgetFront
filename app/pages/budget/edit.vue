@@ -5,6 +5,7 @@ import { ChevronLeft, CircleAlert, CircleCheck } from 'lucide-vue-next'
 import type { BudgetLineInput } from '~/types/api'
 
 const router = useRouter()
+const { t } = useI18n()
 
 function back() {
   if (window.history.state?.back) router.back()
@@ -92,7 +93,7 @@ async function submit() {
     initialPayload.value = JSON.stringify(body)
     back()
   } catch (e) {
-    error.value = apiErrorStatus(e) === 403 ? "Vous n'avez pas le droit de modifier ce budget." : apiErrorMessage(e)
+    error.value = apiErrorStatus(e) === 403 ? t('errors.forbiddenBudget') : apiErrorMessage(e)
   }
 }
 
@@ -112,12 +113,12 @@ function retry() {
       <button
         type="button"
         class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full text-white hover:bg-white/10"
-        aria-label="Retour"
+        :aria-label="$t('common.back')"
         @click="back"
       >
         <ChevronLeft class="size-5" />
       </button>
-      <h1 class="pt-2 text-xl font-bold text-white">Mon budget</h1>
+      <h1 class="pt-2 text-xl font-bold text-white">{{ $t('budgetEdit.title') }}</h1>
     </header>
 
     <main class="-mt-12 flex flex-col gap-4 px-4 pb-28">
@@ -127,16 +128,16 @@ function retry() {
       </template>
 
       <div v-else-if="loadError" class="flex items-center justify-between gap-3 rounded-3xl bg-rose-50 px-4 py-4 shadow-sm">
-        <span class="text-sm text-rose-800">Impossible de charger votre budget.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadYourBudget') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="retry">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <template v-else>
         <!-- Monthly amount -->
         <section class="rounded-3xl bg-white p-5 shadow-sm" aria-labelledby="budget-amount-label">
-          <label id="budget-amount-label" for="budget-amount" class="text-[15px] font-semibold">Budget mensuel</label>
+          <label id="budget-amount-label" for="budget-amount" class="text-[15px] font-semibold">{{ $t('budgetEdit.monthly') }}</label>
           <div
             class="mt-2 flex items-baseline gap-2 border-b-2 pb-1"
             :class="amountInvalid ? 'border-rose-300' : 'border-indigo-100 focus-within:border-indigo-400'"
@@ -153,15 +154,15 @@ function retry() {
             />
             <span class="text-3xl font-bold text-indigo-400" aria-hidden="true">€</span>
           </div>
-          <p v-if="amountInvalid" class="mt-2 text-[13px] text-rose-700">Montant invalide</p>
+          <p v-if="amountInvalid" class="mt-2 text-[13px] text-rose-700">{{ $t('common.invalidAmount') }}</p>
           <p id="budget-amount-help" class="mt-3 text-[13px] text-slate-500">
-            Toutes dépenses confondues, hors virements internes.
+            {{ $t('budgetEdit.monthlyHint') }}
           </p>
         </section>
 
         <!-- Split across categories -->
         <section class="rounded-3xl border border-slate-200 bg-white p-5" aria-labelledby="budget-split-title">
-          <h2 id="budget-split-title" class="text-[15px] font-semibold">Répartition par catégorie</h2>
+          <h2 id="budget-split-title" class="text-[15px] font-semibold">{{ $t('budgetEdit.split') }}</h2>
           <p
             class="mt-1 flex items-center gap-1.5 text-[13px] font-semibold"
             :class="over ? 'text-rose-700' : 'text-emerald-700'"
@@ -169,9 +170,17 @@ function retry() {
           >
             <component :is="over ? CircleAlert : CircleCheck" class="size-4 flex-none" aria-hidden="true" />
             <span>
-              Réparti {{ formatCentsShort(allocated, currency) }} / {{ formatCentsShort(total, currency) }} ·
-              <template v-if="over">dépasse de {{ formatCentsShort(allocated - total, currency) }}</template>
-              <template v-else>reste {{ formatCentsShort(total - allocated, currency) }}</template>
+              {{
+                $t('budgetEdit.allocated', {
+                  allocated: formatCentsShort(allocated, currency),
+                  total: formatCentsShort(total, currency),
+                })
+              }}
+              ·
+              <template v-if="over">
+                {{ $t('budgetEdit.overBy', { amount: formatCentsShort(allocated - total, currency) }) }}
+              </template>
+              <template v-else>{{ $t('budgetEdit.left', { amount: formatCentsShort(total - allocated, currency) }) }}</template>
             </span>
           </p>
 
@@ -203,7 +212,7 @@ function retry() {
                   <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-slate-500">€</span>
                 </div>
               </div>
-              <p v-if="lineInvalid(root.iri)" class="mt-1 text-right text-xs text-rose-700">Montant invalide</p>
+              <p v-if="lineInvalid(root.iri)" class="mt-1 text-right text-xs text-rose-700">{{ $t('common.invalidAmount') }}</p>
             </li>
           </ul>
         </section>
@@ -222,7 +231,7 @@ function retry() {
         :disabled="!canSave"
         @click="submit"
       >
-        {{ save.isPending.value ? 'Enregistrement…' : 'Enregistrer' }}
+        {{ save.isPending.value ? $t('common.saving') : $t('common.save') }}
       </button>
     </div>
   </div>

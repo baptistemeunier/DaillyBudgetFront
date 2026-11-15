@@ -19,6 +19,7 @@ const emit = defineEmits<{
   saved: [hrefs: string[]]
 }>()
 
+const i18n = useI18n()
 const dialog = ref<HTMLDialogElement | null>(null)
 const { data: tree, isPending: treePending, isError: treeError, refetch: refetchTree } = useCategoriesQuery()
 const update = useUpdateSplits()
@@ -80,8 +81,8 @@ const usedIris = computed(() => lines.value.map((l) => l.category).filter((c): c
 const lineErrors = computed(() =>
   lines.value.map((l) => {
     const cents = parseInput(l.input)
-    if (!l.category) return 'Choisissez une catégorie'
-    if (cents === null || cents === 0) return 'Montant invalide'
+    if (!l.category) return i18n.t('categorize.chooseCategoryError')
+    if (cents === null || cents === 0) return i18n.t('common.invalidAmount')
     return null
   }),
 )
@@ -152,7 +153,7 @@ function pickForLine(iri: string) {
 }
 
 function errorMessage(e: unknown): string {
-  if (apiErrorStatus(e) === 403) return "Vous n'avez pas le droit de modifier cette transaction."
+  if (apiErrorStatus(e) === 403) return i18n.t('errors.forbiddenTransaction')
   return apiErrorMessage(e)
 }
 
@@ -185,8 +186,7 @@ async function pickBulk(iri: string) {
     emit('saved', saved)
     const failed = items.length - saved.length
     if (failed === 0) emit('close')
-    else
-      error.value = `${failed} transaction${failed > 1 ? 's' : ''} sur ${items.length} n'${failed > 1 ? 'ont' : 'a'} pas pu être catégorisée${failed > 1 ? 's' : ''}.`
+    else error.value = i18n.t('categorize.bulkFailed', { failed, total: items.length }, failed)
   } finally {
     bulkPending.value = false
   }
@@ -218,9 +218,9 @@ function onBackdropClick(event: MouseEvent) {
     <template v-if="bulk">
       <header class="flex flex-none items-start gap-3 border-b border-slate-100 px-4 pt-4 pb-3">
         <div class="flex min-w-0 flex-1 flex-col">
-          <h2 id="categorize-title" class="truncate text-[17px] font-bold">{{ bulk.length }} transactions</h2>
+          <h2 id="categorize-title" class="truncate text-[17px] font-bold">{{ $t('common.transactionCount', bulk.length) }}</h2>
           <p v-if="bulkTotal" class="text-[13px] text-slate-500">
-            Total ·
+            {{ $t('categorize.total') }} ·
             <span class="font-semibold tabular-nums" :class="bulkTotal.cents > 0 ? 'text-emerald-700' : 'text-slate-900'">
               {{ formatSignedCents(bulkTotal.cents, bulkTotal.currency) }}
             </span>
@@ -229,7 +229,7 @@ function onBackdropClick(event: MouseEvent) {
         <button
           type="button"
           class="-mr-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Fermer"
+          :aria-label="$t('common.close')"
           @click="emit('close')"
         >
           <X class="size-5" />
@@ -243,12 +243,11 @@ function onBackdropClick(event: MouseEvent) {
           <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded-xl bg-slate-100" />
         </div>
         <div v-else-if="treeError || !tree" class="flex items-center justify-between gap-3 rounded-xl bg-rose-50 px-3 py-2">
-          <span class="text-sm text-rose-800">Impossible de charger les catégories.</span>
-          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">Réessayer</button>
+          <span class="text-sm text-rose-800">{{ $t('errors.loadCategories') }}</span>
+          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">{{ $t('common.retry') }}</button>
         </div>
         <p v-else-if="!bulkTypes.length" class="rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-800">
-          Ces transactions n'ont pas de catégorie en commun (débits et crédits, ou comptes courants et d'épargne
-          mélangés) : catégorise-les séparément.
+          {{ $t('categorize.noCommonCategory') }}
         </p>
         <CategoryPicker v-else :tree="tree" :types="bulkTypes" :selected="[]" :busy="bulkPending" @pick="pickBulk" />
       </div>
@@ -261,14 +260,14 @@ function onBackdropClick(event: MouseEvent) {
           v-if="picking !== null"
           type="button"
           class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Retour à la ventilation"
+          :aria-label="$t('categorize.backToSplit')"
           @click="picking = null"
         >
           <ChevronLeft class="size-5" />
         </button>
         <div class="flex min-w-0 flex-1 flex-col">
           <h2 id="categorize-title" class="truncate text-[17px] font-bold">
-            {{ picking !== null ? 'Choisir une catégorie' : t.description }}
+            {{ picking !== null ? $t('categorize.chooseCategory') : t.description }}
           </h2>
           <p class="text-[13px] text-slate-500">
             {{ t.bookingAt ? dayLabel(dayKey(t.bookingAt)) : '' }}
@@ -281,7 +280,7 @@ function onBackdropClick(event: MouseEvent) {
         <button
           type="button"
           class="-mr-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Fermer"
+          :aria-label="$t('common.close')"
           @click="emit('close')"
         >
           <X class="size-5" />
@@ -299,7 +298,7 @@ function onBackdropClick(event: MouseEvent) {
             :class="mode === 'simple' ? 'bg-white shadow-sm' : 'text-slate-500'"
             @click="mode = 'simple'"
           >
-            Simple
+            {{ $t('categorize.mode.simple') }}
           </button>
           <button
             type="button"
@@ -309,7 +308,7 @@ function onBackdropClick(event: MouseEvent) {
             :class="mode === 'split' ? 'bg-white shadow-sm' : 'text-slate-500'"
             @click="mode = 'split'"
           >
-            Ventiler
+            {{ $t('categorize.mode.split') }}
           </button>
           <button
             type="button"
@@ -319,7 +318,7 @@ function onBackdropClick(event: MouseEvent) {
             :class="mode === 'transfer' ? 'bg-white shadow-sm' : 'text-slate-500'"
             @click="mode = 'transfer'"
           >
-            Transfert
+            {{ $t('categorize.mode.transfer') }}
           </button>
         </div>
       </div>
@@ -332,8 +331,8 @@ function onBackdropClick(event: MouseEvent) {
           <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded-xl bg-slate-100" />
         </div>
         <div v-else-if="treeError || !tree" class="flex items-center justify-between gap-3 rounded-xl bg-rose-50 px-3 py-2">
-          <span class="text-sm text-rose-800">Impossible de charger les catégories.</span>
-          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">Réessayer</button>
+          <span class="text-sm text-rose-800">{{ $t('errors.loadCategories') }}</span>
+          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchTree()">{{ $t('common.retry') }}</button>
         </div>
 
         <!-- Category choice for a split line -->
@@ -371,7 +370,7 @@ function onBackdropClick(event: MouseEvent) {
             :disabled="update.isPending.value"
             @click="save([])"
           >
-            Retirer la catégorie
+            {{ $t('categorize.removeCategory') }}
           </button>
         </template>
 
@@ -395,15 +394,15 @@ function onBackdropClick(event: MouseEvent) {
                     aria-hidden="true"
                   />
                   <span class="truncate text-[15px]" :class="line.category ? 'font-medium' : 'text-slate-500'">
-                    {{ line.category ? (tree.byIri.get(line.category)?.fullLabel ?? 'Catégorie') : 'Choisir une catégorie' }}
+                    {{ line.category ? (tree.byIri.get(line.category)?.fullLabel ?? $t('common.category')) : $t('categorize.chooseCategory') }}
                   </span>
                 </button>
                 <label class="relative w-28 flex-none">
-                  <span class="sr-only">Montant</span>
+                  <span class="sr-only">{{ $t('common.amount') }}</span>
                   <input
                     v-model="line.input"
                     inputmode="decimal"
-                    placeholder="0,00"
+                    :placeholder="$t('common.amountPlaceholder')"
                     class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-7 pl-3 text-right text-[15px] tabular-nums outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   />
                   <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-slate-500">€</span>
@@ -411,7 +410,7 @@ function onBackdropClick(event: MouseEvent) {
                 <button
                   type="button"
                   class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-700"
-                  aria-label="Supprimer la ligne"
+                  :aria-label="$t('categorize.removeLine')"
                   @click="removeLine(index)"
                 >
                   <Trash2 class="size-5" />
@@ -428,7 +427,7 @@ function onBackdropClick(event: MouseEvent) {
             class="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 text-sm font-semibold text-indigo-700"
             @click="addLine"
           >
-            <Plus class="size-5" aria-hidden="true" /> Ajouter une ligne
+            <Plus class="size-5" aria-hidden="true" /> {{ $t('categorize.addLine') }}
           </button>
         </template>
       </div>
@@ -440,10 +439,10 @@ function onBackdropClick(event: MouseEvent) {
       >
         <p class="text-[13px]" aria-live="polite">
           <template v-if="remaining < 0">
-            <span class="font-semibold text-rose-700">Dépasse de {{ formatCents(-remaining, currency) }}</span>
+            <span class="font-semibold text-rose-700">{{ $t('categorize.over', { amount: formatCents(-remaining, currency) }) }}</span>
           </template>
           <template v-else>
-            <span class="text-slate-500">Non catégorisé : </span>
+            <span class="text-slate-500">{{ $t('categorize.uncategorizedRemaining') }} </span>
             <span class="font-semibold tabular-nums" :class="remaining === 0 ? 'text-emerald-700' : 'text-amber-700'">
               {{ formatCents(remaining, currency) }}
             </span>
@@ -455,7 +454,7 @@ function onBackdropClick(event: MouseEvent) {
           :disabled="!canSave"
           @click="saveSplit"
         >
-          {{ update.isPending.value ? 'Enregistrement…' : 'Enregistrer' }}
+          {{ update.isPending.value ? $t('common.saving') : $t('common.save') }}
         </button>
       </footer>
     </template>

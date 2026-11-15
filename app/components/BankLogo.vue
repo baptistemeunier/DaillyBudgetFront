@@ -19,6 +19,6 @@ const failed = ref(false)
     aria-hidden="true"
     class="flex size-10 flex-none items-center justify-center rounded-xl bg-indigo-100 text-[13px] font-bold text-indigo-700"
   >
-    {{ initials(bank?.name ?? 'Banque') }}
+    {{ initials(bank?.name ?? $t('common.bank')) }}
   </span>
 </template>

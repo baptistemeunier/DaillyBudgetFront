@@ -8,5 +8,5 @@ const { data: bank, isPending } = useBankQuery(() => props.href)
 <template>
   <span v-if="bank">{{ bank.name }}</span>
   <span v-else-if="isPending && href" class="inline-block h-4 w-24 animate-pulse rounded bg-slate-100 align-middle" />
-  <span v-else>Banque</span>
+  <span v-else>{{ $t('common.bank') }}</span>
 </template>

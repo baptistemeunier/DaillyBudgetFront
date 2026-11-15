@@ -5,12 +5,13 @@ import type { AccountConnection } from '~/types/api'
 const props = defineProps<{ connection: AccountConnection }>()
 const open = defineModel<boolean>('open', { default: false })
 
+const { t } = useI18n()
 const { data: bank } = useBankQuery(() => props.connection._links.bank?.href)
 const { data: accounts, isPending: accountsPending, isError: accountsError, refetch } = useAccountsQuery(
   () => props.connection._links.accounts?.href,
 )
 
-const bankName = computed(() => bank.value?.name ?? 'Banque')
+const bankName = computed(() => bank.value?.name ?? t('common.bank'))
 const expired = computed(() => ['EX', 'SU'].includes(props.connection.externalStatus))
 const configureHref = computed(() => props.connection._links.configure?.href)
 const logoFailed = ref(false)
@@ -43,9 +44,8 @@ async function confirmRemove() {
 }
 
 const subtitle = computed(() => {
-  if (accountsPending.value) return 'Chargement…'
-  const n = accounts.value?.length ?? 0
-  return `${n} compte${n > 1 ? 's' : ''}`
+  if (accountsPending.value) return t('common.loading')
+  return t('common.accountCount', accounts.value?.length ?? 0)
 })
 
 const panelId = computed(() => `connection-${halId(props.connection)}`)
@@ -95,19 +95,19 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
         v-if="configureHref"
         class="flex items-center justify-between gap-3 bg-amber-50 px-4 py-3 text-[13px] text-amber-800"
       >
-        <span>La connexion n'est pas finalisée.</span>
+        <span>{{ $t('connection.notFinalized') }}</span>
         <a
           :href="configureHref"
           class="inline-flex h-7 flex-none items-center gap-1 rounded-full bg-amber-600 px-2.5 text-xs font-semibold text-white"
         >
-          Finaliser <ExternalLink class="size-3.5" aria-hidden="true" />
+          {{ $t('common.finalize') }} <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
       </div>
 
       <div v-if="expired" class="flex items-center justify-between gap-3 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
         <span>
-          L'accès bancaire a expiré. Soldes figés au {{ new Date(connection.updatedAt).toLocaleDateString('fr-FR') }}.
-          <span v-if="reconnect.isError.value" class="block font-semibold">La reconnexion a échoué, réessayez.</span>
+          {{ $t('connection.expiredFrozen', { date: formatDate(connection.updatedAt) }) }}
+          <span v-if="reconnect.isError.value" class="block font-semibold">{{ $t('errors.reconnectFailed') }}</span>
         </span>
         <button
           type="button"
@@ -115,7 +115,7 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
           :disabled="!bank || reconnect.isPending.value"
           @click="startReconnect"
         >
-          Reconnecter
+          {{ $t('common.reconnect') }}
           <Loader2 v-if="reconnect.isPending.value" class="size-3.5 animate-spin" aria-hidden="true" />
           <ExternalLink v-else class="size-3.5" aria-hidden="true" />
         </button>
@@ -127,14 +127,14 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
       </div>
 
       <div v-else-if="accountsError" class="flex items-center justify-between gap-3 py-3 pr-4 pl-[68px] text-[13px]">
-        <span class="text-rose-800">Impossible de charger les comptes.</span>
-        <button type="button" class="min-h-11 font-semibold text-indigo-700" @click="refetch()">Réessayer</button>
+        <span class="text-rose-800">{{ $t('errors.loadAccounts') }}</span>
+        <button type="button" class="min-h-11 font-semibold text-indigo-700" @click="refetch()">{{ $t('common.retry') }}</button>
       </div>
 
       <div v-else-if="!accounts?.length" class="flex items-center justify-between gap-3 py-3 pr-4 pl-[68px] text-[13px]">
         <span class="text-slate-500">
-          Aucun compte pour cette connexion.
-          <span v-if="remove.isError.value" class="block font-semibold text-rose-800">La suppression a échoué, réessayez.</span>
+          {{ $t('connection.noAccounts') }}
+          <span v-if="remove.isError.value" class="block font-semibold text-rose-800">{{ $t('errors.deleteFailedRetry') }}</span>
         </span>
         <button
           v-if="removable"
@@ -143,7 +143,7 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
           :disabled="remove.isPending.value"
           @click="startRemove"
         >
-          Supprimer
+          {{ $t('common.delete') }}
           <Loader2 v-if="remove.isPending.value" class="size-3.5 animate-spin" aria-hidden="true" />
           <Trash2 v-else class="size-3.5" aria-hidden="true" />
         </button>
@@ -156,15 +156,15 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
 
     <ConfirmDialog
       v-model:open="removeOpen"
-      :title="`Supprimer ${bankName} ?`"
-      confirm-label="Supprimer"
+      :title="$t('connection.removeTitle', { bank: bankName })"
+      :confirm-label="$t('common.delete')"
       tone="danger"
       :icon="Trash2"
       :pending="remove.isPending.value"
-      :error="remove.isError.value ? 'La suppression a échoué, réessayez.' : null"
+      :error="remove.isError.value ? $t('errors.deleteFailedRetry') : null"
       @confirm="confirmRemove"
     >
-      <p>Cette connexion ne contient aucun compte. Elle sera retirée de votre liste.</p>
+      <p>{{ $t('connection.removeEmpty') }}</p>
     </ConfirmDialog>
   </article>
 </template>

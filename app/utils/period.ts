@@ -27,20 +27,28 @@ export function periodBounds(period: string): { after: string; strictlyBefore: s
 }
 
 const monthDate = (month: string) => new Date(`${month}-15T12:00:00Z`)
-const longMonth = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-const shortMonth = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' })
+const longMonth = () =>
+  localeFormatter('month-year', (l) => new Intl.DateTimeFormat(l, { month: 'long', year: 'numeric', timeZone: 'UTC' }))
+const shortMonth = () =>
+  localeFormatter('month-short', (l) => new Intl.DateTimeFormat(l, { month: 'short', timeZone: 'UTC' }))
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+/** "Novembre 2026" / "November 2026": a "YYYY-MM" month with its year. */
+export function monthYearLabel(month: string): string {
+  return capitalize(longMonth().format(monthDate(month)))
+}
 
-/** "Novembre 2026", "Sept. – nov. 2026", "Déc. 2025 – nov. 2026". */
+/** "nov." / "Nov": short name of a "YYYY-MM" month. */
+export function shortMonthLabel(month: string): string {
+  return shortMonth().format(monthDate(month))
+}
+
+/** "Novembre 2026", "Sept. – nov. 2026", "Déc. 2025 – nov. 2026" (English: "Sep – Nov 2026"). */
 export function periodLabel(to: string, months: number): string {
-  if (months === 1) return capitalize(longMonth.format(monthDate(to)))
+  if (months === 1) return monthYearLabel(to)
   const from = addMonths(to, -(months - 1))
-  const toLabel = `${shortMonth.format(monthDate(to))} ${to.slice(0, 4)}`
+  const toLabel = `${shortMonthLabel(to)} ${to.slice(0, 4)}`
   const fromLabel =
-    from.slice(0, 4) === to.slice(0, 4)
-      ? shortMonth.format(monthDate(from))
-      : `${shortMonth.format(monthDate(from))} ${from.slice(0, 4)}`
+    from.slice(0, 4) === to.slice(0, 4) ? shortMonthLabel(from) : `${shortMonthLabel(from)} ${from.slice(0, 4)}`
   return `${capitalize(fromLabel)} – ${toLabel}`
 }
 

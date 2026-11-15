@@ -1,6 +1,7 @@
 // Category tree built from GET /categories. The API owns the type and the icon (Lucide name);
 // labels of system categories come from the front i18n table, by code.
-import { CATEGORY_ORDER, categoryLabel, type CategoryLocale } from '~/i18n/categories'
+import { CATEGORY_ORDER, categoryLabel } from '~/i18n/categories'
+import type { AppLocale } from '~/utils/i18n'
 import type { Component } from 'vue'
 import type { AccountType, Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
 
@@ -37,10 +38,10 @@ export interface CategoryTree {
   byIri: Map<string, CategoryNode>
 }
 
-const byOrderThenLabel = (a: CategoryNode, b: CategoryNode) =>
-  a.order - b.order || a.label.localeCompare(b.label, 'fr')
+export function buildCategoryTree(categories: Category[], locale: AppLocale = 'fr'): CategoryTree {
+  const byOrderThenLabel = (a: CategoryNode, b: CategoryNode) =>
+    a.order - b.order || a.label.localeCompare(b.label, locale)
 
-export function buildCategoryTree(categories: Category[], locale: CategoryLocale = 'fr'): CategoryTree {
   const byIri = new Map<string, CategoryNode>()
   const iriByCode = new Map<string, string>()
 
@@ -49,7 +50,7 @@ export function buildCategoryTree(categories: Category[], locale: CategoryLocale
     byIri.set(iri, {
       iri,
       code: c.code,
-      label: c.name ?? (c.code ? categoryLabel(c.code, locale) : undefined) ?? c.code ?? 'Sans nom',
+      label: c.name ?? (c.code ? categoryLabel(c.code, locale) : undefined) ?? c.code ?? i18nT('categories.unnamed'),
       icon: categoryIcon(c.icon) ?? DEFAULT_CATEGORY_ICON,
       iconName: c.icon ?? null,
       type: c.type,
@@ -144,16 +145,16 @@ export function transactionRowCategory(t: Transaction, tree: CategoryTree | unde
   const status = categorizationStatus(t, tree)
   switch (status.kind) {
     case 'none':
-      return { icon: UNCATEGORIZED_ICON, label: 'Non catégorisé', uncategorized: true }
+      return { icon: UNCATEGORIZED_ICON, label: i18nT('categories.uncategorized'), uncategorized: true }
     case 'partial':
       return {
         icon: status.main?.icon ?? UNCATEGORIZED_ICON,
-        label: `Partiellement catégorisé · ${formatCents(Math.abs(status.remainingCents), t.currency)} restant`,
+        label: i18nT('categories.partial', { amount: formatCents(Math.abs(status.remainingCents), t.currency) }),
         uncategorized: true,
       }
     case 'single':
-      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: status.main?.label ?? 'Catégorie', uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: status.main?.label ?? i18nT('common.category'), uncategorized: false }
     case 'split':
-      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: `Ventilé · ${status.count} catégories`, uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: i18nT('categories.split', { n: status.count }), uncategorized: false }
   }
 }

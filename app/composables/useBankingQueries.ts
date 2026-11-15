@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
 import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, Category, EnvelopeInput, HalCollection, Transaction, UserAction } from '~/types/api'
 import type { AccountScope } from '~/utils/accounts'
 
@@ -79,7 +79,7 @@ export function useBanksQuery(country: MaybeRefOrGetter<string | undefined>) {
     staleTime: 20 * 60_000,
     queryFn: async () =>
       (await fetchAllPages<Bank>(api, '/banks', { country: toValue(country)! })).sort((a, b) =>
-        a.name.localeCompare(b.name, 'fr'),
+        a.name.localeCompare(b.name, appLocale()),
       ),
   })
 }
@@ -233,13 +233,19 @@ export function useUncategorizedTransactionsQuery(scope: MaybeRefOrGetter<Accoun
   })
 }
 
-/** System + user categories, as a tree (labels from app/i18n, Lucide icons from app/utils/categoryIcons.ts). */
+/**
+ * System + user categories, as a tree (labels from app/i18n, Lucide icons from app/utils/categoryIcons.ts).
+ * Keyed by locale: the labels are baked into the tree, a language switch builds a new one.
+ */
 export function useCategoriesQuery() {
   const api = useApi()
+  const { locale } = useI18n()
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', locale],
     staleTime: 10 * 60_000,
-    queryFn: async () => buildCategoryTree(await fetchAllPages<Category>(api, '/categories')),
+    placeholderData: keepPreviousData,
+    queryFn: async () =>
+      buildCategoryTree(await fetchAllPages<Category>(api, '/categories'), locale.value === 'en' ? 'en' : 'fr'),
   })
 }
 

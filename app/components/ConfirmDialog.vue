@@ -13,7 +13,7 @@ const props = withDefaults(
     pending?: boolean
     error?: string | null
   }>(),
-  { cancelLabel: 'Annuler', tone: 'primary', icon: undefined, pending: false, error: null },
+  { cancelLabel: undefined, tone: 'primary', icon: undefined, pending: false, error: null },
 )
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ confirm: [] }>()
@@ -87,7 +87,7 @@ const toneClasses = computed(() =>
         :disabled="pending"
         @click="close"
       >
-        {{ cancelLabel }}
+        {{ cancelLabel ?? $t('common.cancel') }}
       </button>
       <button
         type="button"

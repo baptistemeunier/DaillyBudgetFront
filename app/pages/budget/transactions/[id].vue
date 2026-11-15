@@ -5,6 +5,7 @@ import type { Transaction } from '~/types/api'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const id = computed(() => String(route.params.id))
 
 const { view, query: periodQuery, period, label: periodText } = useStatementPeriod()
@@ -14,9 +15,11 @@ const { data: statement } = useStatementQuery(period)
 const node = computed(() => [...(tree.value?.byIri.values() ?? [])].find((n) => iriId(n.iri) === id.value))
 const parent = computed(() => (node.value?.parentIri ? tree.value?.byIri.get(node.value.parentIri) : undefined))
 
-const title = computed(() => node.value?.label ?? 'Catégorie')
+const title = computed(() => node.value?.label ?? t('common.category'))
 const subtitle = computed(() =>
-  [parent.value?.label ?? (node.value ? 'Sans sous-catégorie' : null), periodText.value].filter(Boolean).join(' · '),
+  [parent.value?.label ?? (node.value ? t('budgetCategory.noSubShort') : null), periodText.value]
+    .filter(Boolean)
+    .join(' · '),
 )
 
 // Total + count from the statement details (the list below may be paginated).
@@ -52,9 +55,8 @@ const accountCount = computed(() => {
 })
 
 const headline = computed(() => {
-  const count = detail.value?.transactionCount ?? 0
-  const parts = [`${count} transaction${count > 1 ? 's' : ''}`]
-  if (accountCount.value) parts.push(`${accountCount.value} compte${accountCount.value > 1 ? 's' : ''}`)
+  const parts = [t('common.transactionCount', detail.value?.transactionCount ?? 0)]
+  if (accountCount.value) parts.push(t('common.accountCount', accountCount.value))
   return parts.join(' · ')
 })
 
@@ -78,7 +80,7 @@ function back() {
         <button
           type="button"
           class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Retour"
+          :aria-label="$t('common.back')"
           @click="back"
         >
           <ChevronLeft class="size-5" />
@@ -91,7 +93,7 @@ function back() {
 
       <div class="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
         <div>
-          <p class="text-[13px] text-slate-500">{{ view === 'income' ? 'Reçu' : 'Dépensé' }}</p>
+          <p class="text-[13px] text-slate-500">{{ view === 'income' ? $t('budget.received') : $t('budget.spent') }}</p>
           <p class="text-[28px] leading-tight font-bold tabular-nums">
             {{ detail ? formatCents(toCents(detail.amount), currency) : '—' }}
           </p>
@@ -106,14 +108,14 @@ function back() {
       </div>
 
       <div v-else-if="isError" class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger les transactions.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadTransactions') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <p v-else-if="isEmpty" class="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-        Aucune transaction sur cette période.
+        {{ $t('budgetCategory.noTransactions') }}
       </p>
 
       <template v-else>
@@ -140,9 +142,9 @@ function back() {
           v-else-if="isFetchNextPageError"
           class="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3"
         >
-          <span class="text-sm text-rose-800">Chargement interrompu.</span>
+          <span class="text-sm text-rose-800">{{ $t('common.loadInterrupted') }}</span>
           <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="fetchNextPage()">
-            Réessayer
+            {{ $t('common.retry') }}
           </button>
         </div>
 

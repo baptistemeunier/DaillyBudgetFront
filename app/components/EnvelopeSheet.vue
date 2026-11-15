@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Bottom sheet to create an envelope (sub-category of Épargne) or edit its name and target.
+// Bottom sheet to create an envelope (sub-category of the saving root) or edit its name and target.
 import { X } from 'lucide-vue-next'
 import type { EnvelopeInput } from '~/types/api'
 
@@ -52,7 +52,7 @@ async function submit(input: EnvelopeInput) {
     else if (savingRoot.value) await create.mutateAsync({ ...input, parent: savingRoot.value.iri })
     emit('close')
   } catch (e) {
-    error.value = apiErrorMessage(e, "L'enregistrement a échoué, réessayez.")
+    error.value = apiErrorMessage(e, i18nT('errors.saveFailedRetry'))
   }
 }
 </script>
@@ -69,11 +69,11 @@ async function submit(input: EnvelopeInput) {
     <div class="flex flex-col gap-4 px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       <span class="mx-auto h-1 w-10 rounded-full bg-slate-200" aria-hidden="true" />
       <div class="flex items-center justify-between gap-3">
-        <h2 :id="titleId" class="text-xl font-bold">{{ iri ? "Modifier l'enveloppe" : 'Nouvelle enveloppe' }}</h2>
+        <h2 :id="titleId" class="text-xl font-bold">{{ iri ? $t('envelope.edit') : $t('envelope.new') }}</h2>
         <button
           type="button"
           class="-mr-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Fermer"
+          :aria-label="$t('common.close')"
           @click="close"
         >
           <X class="size-5" />
@@ -85,7 +85,7 @@ async function submit(input: EnvelopeInput) {
         :key="formKey"
         :initial="node ? { name: node.label, icon: node.iconName, targetAmount: node.targetAmount, targetDate: node.targetDate } : {}"
         :currency="currency"
-        :submit-label="iri ? 'Enregistrer' : 'Créer'"
+        :submit-label="iri ? $t('common.save') : $t('common.create')"
         :pending="pending"
         :error="error"
         @submit="submit"

@@ -7,7 +7,8 @@ const router = useRouter()
 
 // Step is driven by ?country= so the browser back button works.
 const country = computed(() => (typeof route.query.country === 'string' ? route.query.country : undefined))
-const countries = bankCountries()
+// Names and order follow the language.
+const countries = computed(() => bankCountries())
 
 const { data: banks, isPending, isError, refetch } = useBanksQuery(country)
 
@@ -50,26 +51,26 @@ function back() {
         <button
           type="button"
           class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Retour"
+          :aria-label="$t('common.back')"
           @click="back"
         >
           <ChevronLeft class="size-5" />
         </button>
         <div class="flex min-w-0 flex-col">
-          <h1 class="text-lg font-bold">Ajouter une banque</h1>
+          <h1 class="text-lg font-bold">{{ $t('banks.add') }}</h1>
           <p class="truncate text-[13px] text-slate-500">
-            {{ country ? countryName(country) : 'Choisissez un pays' }}
+            {{ country ? countryName(country) : $t('banks.chooseCountry') }}
           </p>
         </div>
       </div>
 
       <label v-if="country" class="relative block">
-        <span class="sr-only">Rechercher une banque</span>
+        <span class="sr-only">{{ $t('banks.search') }}</span>
         <Search class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-slate-400" />
         <input
           v-model="search"
           type="search"
-          placeholder="Rechercher une banque"
+          :placeholder="$t('banks.search')"
           autocomplete="off"
           class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-11 text-[15px] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
         />
@@ -90,7 +91,7 @@ function back() {
     <!-- Step 2: bank -->
     <section v-else class="flex flex-col gap-3 p-4">
       <p v-if="create.isError.value" class="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800">
-        Impossible de créer la connexion. Réessayez ou choisissez une autre banque.
+        {{ $t('banks.createFailed') }}
       </p>
 
       <div v-if="isPending" class="flex flex-col gap-2" aria-hidden="true">
@@ -98,19 +99,19 @@ function back() {
       </div>
 
       <div v-else-if="isError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger les banques.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadBanks') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <template v-else>
         <p class="text-[13px] text-slate-500" aria-live="polite">
-          {{ filtered.length }} banque{{ filtered.length > 1 ? 's' : '' }}
+          {{ $t('banks.count', filtered.length) }}
         </p>
 
         <p v-if="!filtered.length" class="rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-          Aucune banque ne correspond à « {{ search }} ».
+          {{ $t('banks.noMatch', { search }) }}
         </p>
 
         <ul v-else class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">

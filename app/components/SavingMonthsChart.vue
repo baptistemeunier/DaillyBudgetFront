@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Saving in (Entrées) and out (Sorties) per month: paired bars, net below each month.
+// Saving in and out per month: paired bars, net below each month.
 // Hover / focus a month for its exact amounts; a hidden table carries the same data.
 import type { SavingMonth } from '~/types/api'
 
@@ -16,12 +16,11 @@ const max = computed(() => Math.max(1, ...rows.value.flatMap((r) => [r.credit, r
 const PLOT = 112 // px
 const height = (cents: number) => (cents > 0 ? Math.max(4, Math.round((cents / max.value) * PLOT)) : 0)
 
-const shortMonth = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' })
-const longMonth = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-const monthDate = (month: string) => new Date(`${month}-15T12:00:00Z`)
-const netFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0, signDisplay: 'exceptZero' })
 /** Net of a month in whole units: "+315", "−165". */
-const netLabel = (cents: number) => netFormat.format(Math.round(cents / 100)).replace('-', '−')
+const netLabel = (cents: number) =>
+  localeFormatter('net', (l) => new Intl.NumberFormat(l, { maximumFractionDigits: 0, signDisplay: 'exceptZero' }))
+    .format(Math.round(cents / 100))
+    .replace('-', '−')
 
 const active = ref<string | null>(null)
 const activeRow = computed(() => rows.value.find((r) => r.month === active.value))
@@ -30,8 +29,8 @@ const activeRow = computed(() => rows.value.find((r) => r.month === active.value
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-4 text-[13px] text-slate-600" aria-hidden="true">
-      <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-indigo-500" /> Entrées</span>
-      <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-slate-300" /> Sorties</span>
+      <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-indigo-500" /> {{ $t('savings.in') }}</span>
+      <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-slate-300" /> {{ $t('savings.out') }}</span>
     </div>
 
     <div class="relative">
@@ -41,9 +40,9 @@ const activeRow = computed(() => rows.value.find((r) => r.month === active.value
         class="pointer-events-none absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-slate-900 px-3 py-2 text-xs whitespace-nowrap text-white shadow-lg"
         role="status"
       >
-        <p class="font-semibold first-letter:uppercase">{{ longMonth.format(monthDate(activeRow.month)) }}</p>
-        <p class="tabular-nums">Entrées {{ formatCents(activeRow.credit, currency) }}</p>
-        <p class="tabular-nums">Sorties {{ formatCents(activeRow.debit, currency) }}</p>
+        <p class="font-semibold">{{ monthYearLabel(activeRow.month) }}</p>
+        <p class="tabular-nums">{{ $t('savings.in') }} {{ formatCents(activeRow.credit, currency) }}</p>
+        <p class="tabular-nums">{{ $t('savings.out') }} {{ formatCents(activeRow.debit, currency) }}</p>
       </div>
 
       <ul class="grid gap-1" :style="{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }" aria-hidden="true">
@@ -61,7 +60,7 @@ const activeRow = computed(() => rows.value.find((r) => r.month === active.value
             <span class="w-3 rounded-t bg-slate-300" :style="{ height: `${height(r.debit)}px` }" />
           </div>
           <span class="text-[13px]" :class="r.month === current ? 'font-semibold text-indigo-700' : 'text-slate-600'">
-            {{ shortMonth.format(monthDate(r.month)) }}
+            {{ shortMonthLabel(r.month) }}
           </span>
           <span
             class="text-xs font-semibold tabular-nums"
@@ -76,13 +75,18 @@ const activeRow = computed(() => rows.value.find((r) => r.month === active.value
     <!-- Hidden on a wrapper: a <caption> escapes sr-only set on the table itself -->
     <div class="sr-only">
       <table>
-        <caption>Épargne par mois</caption>
+        <caption>{{ $t('savings.chartCaption') }}</caption>
         <thead>
-          <tr><th scope="col">Mois</th><th scope="col">Entrées</th><th scope="col">Sorties</th><th scope="col">Épargné</th></tr>
+          <tr>
+            <th scope="col">{{ $t('savings.month') }}</th>
+            <th scope="col">{{ $t('savings.in') }}</th>
+            <th scope="col">{{ $t('savings.out') }}</th>
+            <th scope="col">{{ $t('savings.saved') }}</th>
+          </tr>
         </thead>
         <tbody>
           <tr v-for="r in rows" :key="r.month">
-            <th scope="row">{{ longMonth.format(monthDate(r.month)) }}</th>
+            <th scope="row">{{ monthYearLabel(r.month) }}</th>
             <td>{{ formatCents(r.credit, currency) }}</td>
             <td>{{ formatCents(r.debit, currency) }}</td>
             <td>{{ formatSignedCents(r.net, currency) }}</td>

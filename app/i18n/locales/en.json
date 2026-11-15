@@ -1,0 +1,354 @@
+{
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "create": "Create",
+    "delete": "Delete",
+    "loading": "Loading…",
+    "loadInterrupted": "Loading interrupted.",
+    "category": "Category",
+    "bank": "Bank",
+    "balance": "Balance",
+    "amount": "Amount",
+    "amountPlaceholder": "0.00",
+    "invalidAmount": "Invalid amount",
+    "invalidAmountSentence": "Invalid amount.",
+    "optional": "(optional)",
+    "icon": "Icon",
+    "changeIcon": "Change icon",
+    "selectedCategory": "Selected",
+    "selectedAccount": "Selected",
+    "reconnect": "Reconnect",
+    "finalize": "Finish setup",
+    "percent": "{n}%",
+    "transactionCount": "{n} transactions | {n} transaction | {n} transactions",
+    "accountCount": "{n} accounts | {n} account | {n} accounts"
+  },
+  "errors": {
+    "saveFailed": "Saving failed.",
+    "saveFailedRetry": "Saving failed, please try again.",
+    "createFailed": "Creation failed.",
+    "createFailedRetry": "Creation failed, please try again.",
+    "deleteFailedRetry": "Deletion failed, please try again.",
+    "reconnectFailed": "Reconnection failed, please try again.",
+    "syncFailedRetry": "Sync failed, please try again.",
+    "sessionExpired": "Session expired",
+    "oauthState": "Invalid OAuth state, please try again.",
+    "forbiddenTransaction": "You are not allowed to edit this transaction.",
+    "forbiddenBudget": "You are not allowed to edit this budget.",
+    "forbiddenCategory": "You are not allowed to create categories.",
+    "loadAccount": "Couldn't load this account.",
+    "loadAccounts": "Couldn't load the accounts.",
+    "loadYourAccounts": "Couldn't load your accounts.",
+    "loadBank": "Couldn't load this bank.",
+    "loadBanks": "Couldn't load the banks.",
+    "loadYourBanks": "Couldn't load your banks.",
+    "loadBudget": "Couldn't load the budget.",
+    "loadYourBudget": "Couldn't load your budget.",
+    "loadCategory": "Couldn't load the category.",
+    "loadCategories": "Couldn't load the categories.",
+    "loadTransactions": "Couldn't load the transactions.",
+    "loadSavings": "Couldn't load your savings.",
+    "loadEnvelopes": "Couldn't load your envelopes."
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "justNow": "just now"
+  },
+  "period": {
+    "label": "Period",
+    "previous": "Previous period",
+    "next": "Next period",
+    "months": "{n} months | {n} month | {n} months",
+    "year": "1 year"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "accounts": "Accounts",
+    "budget": "Budget",
+    "savings": "Savings"
+  },
+  "accounts": {
+    "unnamed": "Unnamed account",
+    "typeLabel": "Account type",
+    "type": {
+      "checking": "Checking",
+      "savings": "Savings",
+      "investment": "Investment"
+    },
+    "scope": {
+      "checking": "Checking accounts",
+      "savings": "Savings accounts"
+    },
+    "syncing": "Syncing…",
+    "syncFailed": "Sync failed"
+  },
+  "accountSettings": {
+    "atBank": "At the bank: {name}",
+    "displayName": "Display name",
+    "budgetHint": "Only checking accounts count towards the budget."
+  },
+  "account": {
+    "noTransactions": "No transactions yet.",
+    "historyStart": "Start of the synced history"
+  },
+  "sync": {
+    "title": "Sync",
+    "syncing": "Syncing…",
+    "inProgress": "Sync in progress…",
+    "syncedAgo": "Synced {when}",
+    "failedAgo": "Sync failed {when}",
+    "lastFailedAgo": "Last sync failed {when}",
+    "delayHint": "New transactions can take a few minutes to show up.",
+    "now": "Sync now"
+  },
+  "countries": {
+    "sandbox": "Test (sandbox)"
+  },
+  "categories": {
+    "unnamed": "Unnamed",
+    "uncategorized": "Uncategorized",
+    "partial": "Partly categorized · {amount} left",
+    "split": "Split · {n} categories"
+  },
+  "home": {
+    "title": "My accounts",
+    "syncAll": "Sync accounts",
+    "connectedBanks": "Connected banks",
+    "noBank": "No bank connected yet.",
+    "otherAccounts": "Other accounts",
+    "connectionDeleted": "Connection deleted",
+    "noConnection": "No connection"
+  },
+  "connection": {
+    "notFinalized": "This connection isn't finished.",
+    "expired": "Bank access has expired.",
+    "expiredFrozen": "Bank access has expired. Balances frozen on {date}.",
+    "noAccounts": "No accounts for this connection.",
+    "gone": "This connection no longer exists.",
+    "accounts": "Accounts",
+    "removeTitle": "Delete {bank}?",
+    "removeEmpty": "This connection has no accounts. It will be removed from your list.",
+    "deleteTitle": "Delete the bank",
+    "deleteHint": "Deletes the connection to {bank} and its access authorization. You then choose to keep its accounts and their history, or to erase everything.",
+    "deleteBank": "Delete {bank}",
+    "status": {
+      "linked": "Connected",
+      "expired": "Expired",
+      "actionRequired": "Action required"
+    }
+  },
+  "deleteConnection": {
+    "intro": "Syncing stops and access to your bank is revoked.",
+    "question": "What should happen to {names}?",
+    "legend": "What to do with the accounts",
+    "keep": {
+      "label": "Keep the accounts",
+      "description": "It stays in the app with its full history, under “Other accounts”, but is no longer updated. | They stay in the app with their full history, under “Other accounts”, but are no longer updated."
+    },
+    "delete": {
+      "label": "Delete the accounts too",
+      "description": "The account and all its transactions are erased, including from budgets and envelopes. This can't be undone. | The {n} accounts and all their transactions are erased, including from budgets and envelopes. This can't be undone."
+    },
+    "soon": "Coming soon",
+    "confirm": "Delete connection"
+  },
+  "banks": {
+    "add": "Add a bank",
+    "chooseCountry": "Choose a country",
+    "search": "Search for a bank",
+    "createFailed": "Couldn't create the connection. Try again or choose another bank.",
+    "count": "{n} banks | {n} bank | {n} banks",
+    "noMatch": "No bank matches “{search}”.",
+    "callback": {
+      "missingRef": "Missing connection reference.",
+      "syncFailed": "Syncing the connection failed.",
+      "backHome": "Back to my accounts",
+      "finishing": "Finishing the connection…"
+    }
+  },
+  "auth": {
+    "incompleteResponse": "Incomplete response from the authentication server.",
+    "failed": "Couldn't sign in.",
+    "signingIn": "Signing in…"
+  },
+  "todo": {
+    "title": "To do",
+    "card": "card",
+    "position": "{index} of {total}",
+    "dot": "Action {n}",
+    "expired": {
+      "title": "{bank} access expired",
+      "titleGeneric": "Bank access expired",
+      "text": "Balances frozen since {date}.",
+      "textNoDate": "Your balances are no longer updated."
+    },
+    "configure": {
+      "title": "Finish connecting {bank}",
+      "titleGeneric": "Finish connecting your bank",
+      "text": "Complete the authorization with your bank."
+    },
+    "expiring": {
+      "title": "{bank} access expiring soon",
+      "titleGeneric": "Bank access expiring soon",
+      "text": "Expires {when}. Renew it.",
+      "textNoDate": "Renew it soon.",
+      "cta": "Renew"
+    },
+    "toCategorize": {
+      "title": "{n} transactions to categorize | {n} transaction to categorize | {n} transactions to categorize",
+      "text": "Sort them so your {month} budget is accurate.",
+      "cta": "Categorize"
+    }
+  },
+  "toCategorize": {
+    "title": "To categorize",
+    "selected": "{n} selected",
+    "remaining": "{n} transactions left | {n} transaction left | {n} transactions left",
+    "allAccounts": "All accounts",
+    "select": "Select",
+    "selectAll": "All",
+    "selectNone": "None",
+    "done": "Everything is categorized 🎉",
+    "backHome": "Back to home"
+  },
+  "categorize": {
+    "total": "Total",
+    "noCommonCategory": "These transactions have no category in common (debits and credits, or checking and savings accounts mixed): categorize them separately.",
+    "backToSplit": "Back to the split",
+    "chooseCategory": "Choose a category",
+    "chooseCategoryError": "Choose a category",
+    "mode": {
+      "simple": "Single",
+      "split": "Split",
+      "transfer": "Transfer"
+    },
+    "removeCategory": "Remove the category",
+    "removeLine": "Remove line",
+    "addLine": "Add a line",
+    "over": "Over by {amount}",
+    "uncategorizedRemaining": "Uncategorized:",
+    "bulkFailed": "{failed} of {total} transactions couldn't be categorized."
+  },
+  "categoryPicker": {
+    "search": "Search for a category",
+    "noMatch": "No matching category.",
+    "all": "All categories",
+    "noSubYet": "No sub-categories yet.",
+    "newSub": "New sub-category",
+    "subName": "Sub-category name",
+    "namePlaceholder": "Name"
+  },
+  "transfer": {
+    "savingGroup": "Savings and investments",
+    "changeEnvelope": "Change envelope",
+    "changeAccount": "Change account",
+    "receivedQuestion": "{account} is in {currency}. How much was received on this account?",
+    "sentQuestion": "{account} is in {currency}. How much left this account?",
+    "amountIn": "Amount in {currency}",
+    "envelopeIn": "Which envelope does this money go into ({account})?",
+    "envelopeOut": "Which envelope does this money come out of ({account})?",
+    "accountTo": "Which account does this money go to?",
+    "accountFrom": "Where does this money come from?",
+    "current": "Currently: {label}.",
+    "noOther": "No other account. Add a manual account (savings account, brokerage…) from your profile."
+  },
+  "budget": {
+    "title": "Budget",
+    "expenses": "Expenses",
+    "income": "Income",
+    "other": "Other",
+    "donutTotal": "{kind}: {amount}",
+    "donutTop": "Top items: {top}",
+    "left": "{amount} left",
+    "overBy": "Over by {amount}",
+    "daysLeft": "{n} days left | {n} day left | {n} days left",
+    "of": "of {amount}",
+    "setUp": "Set my budget",
+    "setUpHint": "Set a monthly amount and split it by category.",
+    "byCategory": "By category",
+    "noExpenses": "No expenses in this period.",
+    "noIncome": "No income in this period.",
+    "spent": "Spent",
+    "received": "Received"
+  },
+  "budgetEdit": {
+    "title": "My budget",
+    "monthly": "Monthly budget",
+    "monthlyHint": "All expenses combined, excluding internal transfers.",
+    "split": "Split by category",
+    "allocated": "Allocated {allocated} / {total}",
+    "overBy": "over by {amount}",
+    "left": "{amount} left"
+  },
+  "budgetCategory": {
+    "subCategories": "Sub-categories",
+    "noSub": "No sub-categories.",
+    "noSubShort": "No sub-category",
+    "rootDirect": "{label} (no sub-category)",
+    "outsideBudget": "outside the budget",
+    "noTransactions": "No transactions in this period."
+  },
+  "savings": {
+    "title": "Savings",
+    "in": "In",
+    "out": "Out",
+    "saved": "Saved",
+    "month": "Month",
+    "chartCaption": "Savings by month",
+    "savedOver": "Saved over {n} months | Saved over {n} month | Saved over {n} months",
+    "average": "In − out · {amount} per month on average",
+    "savedSoFar": "Saved (so far)",
+    "leftToAllocate": "Left to allocate — {month}",
+    "leftToAllocateHint": "Part of your {month} savings isn't in any envelope.",
+    "allocate": "Allocate to my envelopes",
+    "envelopes": "My envelopes",
+    "virtualNote": "Envelopes are virtual: the money stays on your savings accounts ({names}, {balance}). Unallocated: {unallocated}."
+  },
+  "envelope": {
+    "new": "New envelope",
+    "edit": "Edit envelope",
+    "deleted": "Deleted envelope",
+    "nameLabel": "Envelope name",
+    "namePlaceholder": "Holidays, emergency fund…",
+    "nameRequired": "Give the envelope a name.",
+    "target": "Target",
+    "targetPlaceholder": "3,500",
+    "targetRequired": "Enter the target to reach.",
+    "targetInvalid": "Invalid amount (e.g. 3,500).",
+    "byDate": "By",
+    "goal": "Target {amount}",
+    "thisMonth": "{amount} this month",
+    "progress": "{name}: {n}% of the target"
+  },
+  "profile": {
+    "title": "My profile",
+    "settings": "Settings",
+    "language": "Language",
+    "bankConnections": "Bank connections",
+    "manualAccounts": "Manual accounts",
+    "addManualAccount": "Add a manual account"
+  },
+  "manualAccount": {
+    "title": "Manual account",
+    "intro": "For an account your bank doesn't report (savings account, brokerage, life insurance…). You keep its balance up to date yourself.",
+    "name": "Account name",
+    "namePlaceholder": "Savings account",
+    "nameRequired": "Give the account a name.",
+    "initialBalance": "Opening balance",
+    "currency": "Currency",
+    "makePositive": "Negative balance, make it positive",
+    "makeNegative": "Positive balance, make it negative",
+    "amountInvalid": "Invalid amount (e.g. 12,400.00).",
+    "balanceHint": "The account balance on the date below.",
+    "balanceDate": "Balance as of",
+    "history": "History",
+    "create": "Create account"
+  }
+}

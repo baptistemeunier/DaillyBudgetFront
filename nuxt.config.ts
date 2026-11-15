@@ -9,10 +9,27 @@ export default defineNuxtConfig({
   // Nitro still runs server/ (API proxy + token exchange).
   ssr: false,
 
-  modules: ['@nuxt/fonts'],
+  modules: ['@nuxt/fonts', '@nuxtjs/i18n'],
 
   fonts: {
     families: [{ name: 'Inter', weights: [400, 500, 600, 700] }],
+  },
+
+  // UI messages in app/i18n/locales; no locale prefix in URLs (SPA behind OAuth). The choice is kept
+  // in a cookie, the browser language decides on first visit.
+  i18n: {
+    restructureDir: 'app/i18n',
+    locales: [
+      { code: 'fr', language: 'fr-FR', name: 'Français', file: 'fr.json' },
+      { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
+    ],
+    defaultLocale: 'fr',
+    strategy: 'no_prefix',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_locale',
+      fallbackLocale: 'fr',
+    },
   },
 
   css: ['~/assets/css/main.css'],

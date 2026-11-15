@@ -10,9 +10,12 @@ const connectionHref = computed(
   () => props.action._links.accountConnection?.href ?? props.action._links['account-connection']?.href,
 )
 
+const { t } = useI18n()
 const { data: bank } = useBankQuery(bankHref)
 const { data: connections } = useConnectionsQuery()
-const bankName = computed(() => bank.value?.name ?? 'bancaire')
+const bankName = computed(() => bank.value?.name ?? null)
+/** Title with the bank name, or its generic variant while / if the bank is unknown. */
+const withBank = (key: string) => (bankName.value ? t(key, { bank: bankName.value }) : t(`${key}Generic`))
 
 // Consent link of a connection to finalize, from the (already loaded) connection list.
 const configureHref = computed(
@@ -24,8 +27,6 @@ function startReconnect() {
   if (bankHref.value) reconnect.start(halId({ _links: { self: { href: bankHref.value } } }))
 }
 
-const month = new Date().toLocaleDateString('fr-FR', { month: 'long' })
-const formatDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-FR') : '')
 
 interface CardView {
   icon: Component
@@ -54,9 +55,9 @@ const view = computed<CardView>(() => {
       return {
         icon: Unplug,
         tint: TINTS.rose,
-        title: `Accès ${bankName.value} expiré`,
-        text: a.expiresAt ? `Soldes figés depuis le ${formatDate(a.expiresAt)}.` : 'Vos soldes ne sont plus mis à jour.',
-        cta: 'Reconnecter',
+        title: withBank('todo.expired.title'),
+        text: a.expiresAt ? t('todo.expired.text', { date: formatDate(a.expiresAt) }) : t('todo.expired.textNoDate'),
+        cta: t('common.reconnect'),
         onClick: startReconnect,
         disabled: !bankHref.value,
       }
@@ -64,9 +65,9 @@ const view = computed<CardView>(() => {
       return {
         icon: Link,
         tint: TINTS.amber,
-        title: `Connexion ${bankName.value} à finaliser`,
-        text: 'Terminez l’autorisation auprès de votre banque.',
-        cta: 'Finaliser',
+        title: withBank('todo.configure.title'),
+        text: t('todo.configure.text'),
+        cta: t('common.finalize'),
         href: configureHref.value,
         disabled: !configureHref.value,
       }
@@ -74,20 +75,19 @@ const view = computed<CardView>(() => {
       return {
         icon: Clock,
         tint: TINTS.amber,
-        title: `Accès ${bankName.value} bientôt expiré`,
-        text: a.expiresAt ? `Expire ${relativeTime(a.expiresAt)}. Renouvelez-le.` : 'Renouvelez-le bientôt.',
-        cta: 'Renouveler',
+        title: withBank('todo.expiring.title'),
+        text: a.expiresAt ? t('todo.expiring.text', { when: relativeTime(a.expiresAt) }) : t('todo.expiring.textNoDate'),
+        cta: t('todo.expiring.cta'),
         onClick: startReconnect,
         disabled: !bankHref.value,
       }
     case 'TRANSACTIONS_TO_CATEGORIZE': {
-      const n = a.count ?? 0
       return {
         icon: Tag,
         tint: TINTS.indigo,
-        title: `${n} transaction${n > 1 ? 's' : ''} à catégoriser`,
-        text: `Classe-les pour que ton budget de ${month} soit juste.`,
-        cta: 'Catégoriser',
+        title: t('todo.toCategorize.title', a.count ?? 0),
+        text: t('todo.toCategorize.text', { month: monthName(currentMonth()) }),
+        cta: t('todo.toCategorize.cta'),
         to: '/transactions/to-categorize',
       }
     }
@@ -111,7 +111,7 @@ const buttonClass = 'inline-flex h-10 items-center gap-1.5 rounded-full px-4 tex
         <h3 class="text-[17px] leading-snug font-bold">{{ view.title }}</h3>
         <p class="text-sm text-slate-500">{{ view.text }}</p>
         <p v-if="reconnect.isError.value" class="text-sm font-semibold text-rose-800">
-          La reconnexion a échoué, réessayez.
+          {{ $t('errors.reconnectFailed') }}
         </p>
       </div>
     </div>

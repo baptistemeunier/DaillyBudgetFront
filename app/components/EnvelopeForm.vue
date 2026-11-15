@@ -35,11 +35,12 @@ const iconGridOpen = ref(false)
 const nameInput = ref<HTMLInputElement | null>(null)
 onMounted(() => nameInput.value?.focus())
 
+const { t } = useI18n()
 const touched = ref(false)
 const cents = computed(() => parseAmountInput(amount.value))
-const nameError = computed(() => (!name.value.trim() ? "Donne un nom à l'enveloppe." : null))
+const nameError = computed(() => (!name.value.trim() ? t('envelope.nameRequired') : null))
 const amountError = computed(() =>
-  !amount.value.trim() ? "Indique l'objectif à atteindre." : !cents.value ? 'Montant invalide (ex. 3 500).' : null,
+  !amount.value.trim() ? t('envelope.targetRequired') : !cents.value ? t('envelope.targetInvalid') : null,
 )
 const today = dayKey(new Date())
 
@@ -61,7 +62,7 @@ const input =
 <template>
   <form class="flex flex-col" :class="compact ? 'gap-2.5' : 'gap-4'" novalidate @submit.prevent="submit" @keydown.esc.stop.prevent="emit('cancel')">
     <div class="flex flex-col gap-1">
-      <label :for="ids.name" class="text-[13px] font-medium text-slate-700">Nom de l'enveloppe</label>
+      <label :for="ids.name" class="text-[13px] font-medium text-slate-700">{{ $t('envelope.nameLabel') }}</label>
       <div class="flex items-center gap-2">
         <IconPicker v-model="icon" v-model:open="iconGridOpen" :controls="ids.icons" />
         <input
@@ -70,7 +71,7 @@ const input =
           v-model="name"
           maxlength="100"
           autocomplete="off"
-          placeholder="Vacances, fonds d'urgence…"
+          :placeholder="$t('envelope.namePlaceholder')"
           :aria-invalid="touched && !!nameError"
           :class="[input, 'min-w-0 flex-1']"
         />
@@ -81,14 +82,14 @@ const input =
 
     <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
       <div class="flex flex-col gap-1">
-        <label :for="ids.amount" class="text-[13px] font-medium text-slate-700">Objectif</label>
+        <label :for="ids.amount" class="text-[13px] font-medium text-slate-700">{{ $t('envelope.target') }}</label>
         <span class="relative">
           <input
             :id="ids.amount"
             v-model="amount"
             inputmode="decimal"
             autocomplete="off"
-            placeholder="3 500"
+            :placeholder="$t('envelope.targetPlaceholder')"
             :aria-invalid="touched && !!amountError"
             :class="[input, 'pr-12 text-right tabular-nums']"
           />
@@ -97,7 +98,7 @@ const input =
       </div>
       <div class="flex flex-col gap-1">
         <label :for="ids.date" class="text-[13px] font-medium text-slate-700">
-          Pour le <span class="font-normal text-slate-500">(facultatif)</span>
+          {{ $t('envelope.byDate') }} <span class="font-normal text-slate-500">{{ $t('common.optional') }}</span>
         </label>
         <input :id="ids.date" v-model="date" type="date" :min="today" :class="input" />
       </div>
@@ -112,7 +113,7 @@ const input =
         class="min-h-11 rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100"
         @click="emit('cancel')"
       >
-        Annuler
+        {{ $t('common.cancel') }}
       </button>
       <button
         type="submit"

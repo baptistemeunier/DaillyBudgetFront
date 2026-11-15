@@ -46,30 +46,21 @@ function onBackdrop(event: MouseEvent) {
   if (event.target === dialog.value) close()
 }
 
+const { t } = useI18n()
 const count = computed(() => props.accountNames.length)
-const namesLabel = computed(() => {
-  const names = props.accountNames
-  if (names.length <= 1) return names[0] ?? ''
-  return `${names.slice(0, -1).join(', ')} et ${names.at(-1)}`
-})
+const namesLabel = computed(() => formatList(props.accountNames))
 
 const options = computed(() => [
   {
     value: 'keep' as const,
-    label: 'Garder les comptes',
-    description:
-      count.value > 1
-        ? 'Ils restent dans l\'app avec tout leur historique, dans « Autres comptes », mais ne sont plus mis à jour.'
-        : 'Il reste dans l\'app avec tout son historique, dans « Autres comptes », mais n\'est plus mis à jour.',
+    label: t('deleteConnection.keep.label'),
+    description: t('deleteConnection.keep.description', count.value),
     disabled: false,
   },
   {
     value: 'delete' as const,
-    label: 'Supprimer aussi les comptes',
-    description:
-      count.value > 1
-        ? `Les ${count.value} comptes et toutes leurs transactions sont effacés, y compris des budgets et des enveloppes. Définitif.`
-        : 'Le compte et toutes ses transactions sont effacés, y compris des budgets et des enveloppes. Définitif.',
+    label: t('deleteConnection.delete.label'),
+    description: t('deleteConnection.delete.description', count.value),
     disabled: !DELETE_ACCOUNTS_AVAILABLE,
   },
 ])
@@ -88,15 +79,15 @@ const options = computed(() => [
       <span class="mx-auto h-1 w-10 rounded-full bg-slate-200" aria-hidden="true" />
 
       <div class="flex flex-col gap-1.5">
-        <h2 :id="titleId" class="text-xl font-bold">Supprimer {{ bankName }} ?</h2>
+        <h2 :id="titleId" class="text-xl font-bold">{{ $t('connection.removeTitle', { bank: bankName }) }}</h2>
         <p class="text-sm text-slate-600">
-          La synchronisation s'arrête et l'accès à ta banque est révoqué.
-          <template v-if="count">Que faire de {{ namesLabel }} ?</template>
+          {{ $t('deleteConnection.intro') }}
+          <template v-if="count">{{ $t('deleteConnection.question', { names: namesLabel }) }}</template>
         </p>
       </div>
 
       <fieldset v-if="count" class="flex flex-col gap-2">
-        <legend class="sr-only">Que faire des comptes</legend>
+        <legend class="sr-only">{{ $t('deleteConnection.legend') }}</legend>
         <label
           v-for="option in options"
           :key="option.value"
@@ -117,7 +108,7 @@ const options = computed(() => [
           <span class="flex flex-col gap-0.5">
             <span class="text-[15px] font-semibold">{{ option.label }}</span>
             <span class="text-[13px] text-slate-600">{{ option.description }}</span>
-            <span v-if="option.disabled" class="text-xs font-medium text-slate-500">Bientôt disponible</span>
+            <span v-if="option.disabled" class="text-xs font-medium text-slate-500">{{ $t('deleteConnection.soon') }}</span>
           </span>
         </label>
       </fieldset>
@@ -131,7 +122,7 @@ const options = computed(() => [
           :disabled="pending"
           @click="close"
         >
-          Annuler
+          {{ $t('common.cancel') }}
         </button>
         <button
           type="button"
@@ -140,7 +131,7 @@ const options = computed(() => [
           @click="emit('confirm', mode)"
         >
           <Loader2 v-if="pending" class="size-4 animate-spin" aria-hidden="true" />
-          Supprimer la connexion
+          {{ $t('deleteConnection.confirm') }}
         </button>
       </div>
     </div>

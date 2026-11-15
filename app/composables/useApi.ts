@@ -8,7 +8,7 @@ export function useApi() {
     const token = await auth.getAccessToken()
     if (!token) {
       await auth.login(route.fullPath)
-      throw new Error('Session expirée')
+      throw new Error(i18nT('errors.sessionExpired'))
     }
 
     try {

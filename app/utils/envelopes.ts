@@ -1,18 +1,18 @@
-// Saving envelopes: icon suggested from the name (before the user picks one), color fixed by the
-// category IRI (stable whatever the sort order).
+// Saving envelopes: icon suggested from the name (before the user picks one, French or English
+// keywords), color fixed by the category IRI (stable whatever the sort order).
 
 const SUGGESTIONS: [RegExp, string][] = [
-  [/assurance|mutuelle/, 'shield'],
-  [/voiture|auto|moto|vélo|velo/, 'car'],
-  [/vacance|voyage|séjour|sejour|philippines|vol\b/, 'plane'],
-  [/urgence|précaution|precaution|imprévu|imprevu/, 'life-buoy'],
-  [/cadeau|noël|noel|anniversaire/, 'gift'],
-  [/maison|appart|logement|travaux|apport/, 'house'],
-  [/meuble|déco|deco|canapé|canape/, 'sofa'],
-  [/santé|sante|médical|medical|dentiste/, 'heart-pulse'],
-  [/étude|etude|école|ecole|formation/, 'graduation-cap'],
-  [/mariage|bague/, 'gem'],
-  [/bébé|bebe|enfant/, 'baby'],
+  [/assurance|mutuelle|insurance/, 'shield'],
+  [/voiture|auto|moto|vélo|velo|car\b|bike/, 'car'],
+  [/vacance|voyage|séjour|sejour|philippines|vol\b|holiday|vacation|trip|travel|flight/, 'plane'],
+  [/urgence|précaution|precaution|imprévu|imprevu|emergency|rainy/, 'life-buoy'],
+  [/cadeau|noël|noel|anniversaire|gift|christmas|birthday/, 'gift'],
+  [/maison|appart|logement|travaux|apport|house|home|flat|deposit/, 'house'],
+  [/meuble|déco|deco|canapé|canape|furniture|sofa/, 'sofa'],
+  [/santé|sante|médical|medical|dentiste|health|dentist/, 'heart-pulse'],
+  [/étude|etude|école|ecole|formation|study|school|college|education/, 'graduation-cap'],
+  [/mariage|bague|wedding|ring\b/, 'gem'],
+  [/bébé|bebe|enfant|baby|child|kid/, 'baby'],
 ]
 
 /** Lucide icon name suggested by an envelope name; piggy-bank by default. */

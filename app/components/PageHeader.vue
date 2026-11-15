@@ -22,7 +22,7 @@ function goBack() {
           v-if="back"
           type="button"
           class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Retour"
+          :aria-label="$t('common.back')"
           @click="goBack"
         >
           <ArrowLeft class="size-5" />

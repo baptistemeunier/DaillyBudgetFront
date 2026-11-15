@@ -6,9 +6,13 @@ export function toCents(amount: string): number {
   return negative ? -cents : cents
 }
 
-/** Typed amount ("2 100,5", "12.50") -> positive cents ; invalid -> null. */
+/**
+ * Typed amount -> positive cents; invalid -> null. French: "2 100,5" or "12.50";
+ * English: "2,100.50" (commas are thousands separators).
+ */
 export function parseAmountInput(input: string): number | null {
-  const v = input.trim().replace(/[\s\u00a0\u202f]/g, '').replace(',', '.')
+  const compact = input.trim().replace(/[\s\u00a0\u202f]/g, '')
+  const v = appLocale() === 'en' ? compact.replace(/,/g, '') : compact.replace(',', '.')
   if (!/^\d+(\.\d{0,2})?$/.test(v)) return null
   return toCents(v)
 }
@@ -19,26 +23,28 @@ export function centsToDecimal(cents: number): string {
   return `${cents < 0 ? '-' : ''}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`
 }
 
-/** Cents -> input value: 210000 -> "2100", 1250 -> "12,50". */
+/** Cents -> input value: 210000 -> "2100", 1250 -> "12,50" (English: "12.50"). */
 export function centsToInput(cents: number, keepDecimals = false): string {
   const abs = Math.abs(cents)
   if (!keepDecimals && abs % 100 === 0) return String(abs / 100)
-  return (abs / 100).toFixed(2).replace('.', ',')
+  const value = (abs / 100).toFixed(2)
+  return appLocale() === 'en' ? value : value.replace('.', ',')
 }
 
-/** Amount without decimals when round: "2 100 €", "12,50 €". */
+/** Amount without decimals when round: "2 100 €", "12,50 €" (English: "€2,100", "€12.50"). */
 export function formatCentsShort(cents: number, currency = 'EUR'): string {
   const digits = cents % 100 === 0 ? 0 : 2
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(cents / 100)
+  return localeFormatter(
+    `currency-short|${currency}|${digits}`,
+    (l) =>
+      new Intl.NumberFormat(l, { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }),
+  ).format(cents / 100)
 }
 
 export function formatCents(cents: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(cents / 100)
+  return localeFormatter(`currency|${currency}`, (l) => new Intl.NumberFormat(l, { style: 'currency', currency })).format(
+    cents / 100,
+  )
 }
 
 /** "FR7630006000011234567890189" -> "FR76 •••• 0189" */
@@ -78,25 +84,39 @@ export function dayKey(date: Date | string): string {
 export function dayLabel(key: string, now = new Date()): string {
   const today = dayKey(now)
   const yesterday = dayKey(new Date(now.getTime() - 86_400_000))
-  if (key === today) return "Aujourd'hui"
-  if (key === yesterday) return 'Hier'
+  if (key === today) return i18nT('dates.today')
+  if (key === yesterday) return i18nT('dates.yesterday')
 
   // Noon UTC keeps the same calendar day once shown in Europe/Paris.
   const date = new Date(`${key}T12:00:00Z`)
   const sameYear = key.slice(0, 4) === today.slice(0, 4)
-  const label = new Intl.DateTimeFormat('fr-FR', {
-    timeZone: TZ,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    ...(sameYear ? {} : { year: 'numeric' }),
-  }).format(date)
-  return label.charAt(0).toUpperCase() + label.slice(1)
+  const format = localeFormatter(
+    `day|${sameYear}`,
+    (l) =>
+      new Intl.DateTimeFormat(l, {
+        timeZone: TZ,
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        ...(sameYear ? {} : { year: 'numeric' }),
+      }),
+  )
+  return capitalize(format.format(date))
 }
 
-const relative = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
+/** "12/11/2026" (English: "12/11/2026" too, day first). */
+export function formatDate(date: string | Date): string {
+  return localeFormatter('date', (l) => new Intl.DateTimeFormat(l, { timeZone: TZ })).format(new Date(date))
+}
 
-/** "il y a 2 heures", "hier"… */
+/** "novembre" / "November": name of a "YYYY-MM" month. */
+export function monthName(month: string): string {
+  return localeFormatter('month-name', (l) => new Intl.DateTimeFormat(l, { month: 'long', timeZone: 'UTC' })).format(
+    new Date(`${month}-15T12:00:00Z`),
+  )
+}
+
+/** "il y a 2 heures", "hier"… (English: "2 hours ago", "yesterday"). */
 export function relativeTime(date: string | Date, now = Date.now()): string {
   const diff = (new Date(date).getTime() - now) / 1000
   const units: [Intl.RelativeTimeFormatUnit, number][] = [
@@ -108,7 +128,10 @@ export function relativeTime(date: string | Date, now = Date.now()): string {
     ['minute', 60],
   ]
   for (const [unit, seconds] of units) {
-    if (Math.abs(diff) >= seconds) return relative.format(Math.round(diff / seconds), unit)
+    if (Math.abs(diff) >= seconds) {
+      const relative = localeFormatter('relative', (l) => new Intl.RelativeTimeFormat(l, { numeric: 'auto' }))
+      return relative.format(Math.round(diff / seconds), unit)
+    }
   }
-  return "à l'instant"
+  return i18nT('dates.justNow')
 }

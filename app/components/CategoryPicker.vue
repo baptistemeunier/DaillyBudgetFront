@@ -2,7 +2,7 @@
 // Searchable category tree, drill-down: tapping a parent opens its sub-categories.
 // Only sub-categories can be picked (the API refuses a root on a split): a parent always opens,
 // even empty, so a sub-category can be created there.
-// A single offered parent (Épargne on a savings account) is shown opened, without the way back.
+// A single offered parent (the saving root on a savings account) is shown opened, without the way back.
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from 'lucide-vue-next'
 import type { CategoryType, EnvelopeInput } from '~/types/api'
 import type { CategoryNode, CategoryTree } from '~/utils/categories'
@@ -18,6 +18,7 @@ const props = defineProps<{
   busy?: boolean
 }>()
 const emit = defineEmits<{ pick: [iri: string] }>()
+const { t } = useI18n()
 
 const isVisible = (node: CategoryNode) => !props.types || props.types.includes(node.type)
 const isPickable = (node: CategoryNode) => !!node.parentIri
@@ -39,7 +40,7 @@ const results = computed(() => {
   if (!q) return null
   return [...props.tree.byIri.values()]
     .filter((n) => isVisible(n) && isPickable(n) && normalizeSearch(n.fullLabel).includes(q))
-    .sort((a, b) => a.fullLabel.localeCompare(b.fullLabel, 'fr'))
+    .sort((a, b) => a.fullLabel.localeCompare(b.fullLabel, appLocale()))
 })
 
 const isSelected = (iri: string) => props.selected?.includes(iri) ?? false
@@ -75,7 +76,7 @@ watch(openRootIri, () => {
   createError.value = null
 })
 
-// Under Épargne the sub-category is an envelope: name + target.
+// Under the saving root the sub-category is an envelope: name + target.
 async function submitEnvelope(input: EnvelopeInput) {
   if (!openRoot.value || create.isPending.value) return
   createError.value = null
@@ -85,7 +86,7 @@ async function submitEnvelope(input: EnvelopeInput) {
     emit('pick', category._links.self.href)
   } catch (e) {
     createError.value =
-      apiErrorStatus(e) === 403 ? 'Vous n’avez pas le droit de créer des catégories.' : apiErrorMessage(e, 'La création a échoué.')
+      apiErrorStatus(e) === 403 ? t('errors.forbiddenCategory') : apiErrorMessage(e, t('errors.createFailed'))
   }
 }
 
@@ -99,11 +100,8 @@ async function submitCreate() {
     newName.value = ''
     emit('pick', category._links.self.href)
   } catch (e) {
-    const err = e as { status?: number; data?: { violations?: { message: string }[]; detail?: string } }
     createError.value =
-      err.status === 403
-        ? 'Vous n’avez pas le droit de créer des catégories.'
-        : err.data?.violations?.map((v) => v.message).join(' ') || err.data?.detail || 'La création a échoué.'
+      apiErrorStatus(e) === 403 ? t('errors.forbiddenCategory') : apiErrorMessage(e, t('errors.createFailed'))
   }
 }
 </script>
@@ -111,12 +109,12 @@ async function submitCreate() {
 <template>
   <div class="flex flex-col gap-3">
     <label class="relative block">
-      <span class="sr-only">Rechercher une catégorie</span>
+      <span class="sr-only">{{ $t('categoryPicker.search') }}</span>
       <Search class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-slate-400" />
       <input
         v-model="search"
         type="search"
-        placeholder="Rechercher une catégorie"
+        :placeholder="$t('categoryPicker.search')"
         autocomplete="off"
         class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-11 text-[15px] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
       />
@@ -124,7 +122,7 @@ async function submitCreate() {
 
     <!-- Search results: flat list -->
     <ul v-if="results" class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
-      <li v-if="!results.length" class="px-4 py-4 text-sm text-slate-500">Aucune catégorie ne correspond.</li>
+      <li v-if="!results.length" class="px-4 py-4 text-sm text-slate-500">{{ $t('categoryPicker.noMatch') }}</li>
       <li v-for="node in results" :key="node.iri">
         <button
           type="button"
@@ -134,7 +132,7 @@ async function submitCreate() {
         >
           <component :is="node.icon" class="size-5 flex-none text-slate-600" aria-hidden="true" />
           <span class="flex-1 text-[15px]">{{ node.fullLabel }}</span>
-          <Check v-if="isSelected(node.iri)" class="size-5 text-indigo-600" aria-label="Sélectionnée" />
+          <Check v-if="isSelected(node.iri)" class="size-5 text-indigo-600" :aria-label="$t('common.selectedCategory')" />
         </button>
       </li>
     </ul>
@@ -147,7 +145,7 @@ async function submitCreate() {
         class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
         @click="openRootIri = null"
       >
-        <ChevronLeft class="size-5" aria-hidden="true" /> Toutes les catégories
+        <ChevronLeft class="size-5" aria-hidden="true" /> {{ $t('categoryPicker.all') }}
       </button>
 
       <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
@@ -158,7 +156,7 @@ async function submitCreate() {
           <span class="text-[15px] font-semibold">{{ openRoot.label }}</span>
         </li>
         <li v-if="!openRoot.children.length" class="py-3 pr-4 pl-16 text-sm text-slate-500">
-          Aucune sous-catégorie pour l'instant.
+          {{ $t('categoryPicker.noSubYet') }}
         </li>
         <li v-for="child in openRoot.children" :key="child.iri">
           <button
@@ -171,7 +169,7 @@ async function submitCreate() {
               <component :is="child.icon" class="size-5 text-slate-500" />
             </span>
             <span class="flex-1 text-[15px]">{{ child.label }}</span>
-            <Check v-if="isSelected(child.iri)" class="size-5 text-indigo-600" aria-label="Sélectionnée" />
+            <Check v-if="isSelected(child.iri)" class="size-5 text-indigo-600" :aria-label="$t('common.selectedCategory')" />
           </button>
         </li>
 
@@ -184,14 +182,14 @@ async function submitCreate() {
             @click="startCreate"
           >
             <Plus class="size-4" aria-hidden="true" />
-            {{ openRoot.type === 'saving' ? 'Nouvelle enveloppe' : 'Nouvelle sous-catégorie' }}
+            {{ openRoot.type === 'saving' ? $t('envelope.new') : $t('categoryPicker.newSub') }}
           </button>
         </li>
         <li v-else-if="openRoot.type === 'saving'" class="p-3">
           <EnvelopeForm
             compact
             :initial="{ name: search }"
-            submit-label="Créer"
+            :submit-label="$t('common.create')"
             :pending="create.isPending.value"
             :error="createError"
             @submit="submitEnvelope"
@@ -202,12 +200,12 @@ async function submitCreate() {
           <form class="flex items-center gap-2" @submit.prevent="submitCreate">
             <IconPicker v-model="newIcon" v-model:open="iconGridOpen" :controls="iconGridId" />
             <label class="min-w-0 flex-1">
-              <span class="sr-only">Nom de la sous-catégorie</span>
+              <span class="sr-only">{{ $t('categoryPicker.subName') }}</span>
               <input
                 ref="newNameInput"
                 v-model="newName"
                 maxlength="100"
-                placeholder="Nom"
+                :placeholder="$t('categoryPicker.namePlaceholder')"
                 autocomplete="off"
                 class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-[15px] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 @keydown.esc.stop.prevent="creating = false"
@@ -219,12 +217,12 @@ async function submitCreate() {
               :disabled="!newName.trim() || create.isPending.value || busy"
             >
               <Loader2 v-if="create.isPending.value" class="size-4 animate-spin" aria-hidden="true" />
-              Créer
+              {{ $t('common.create') }}
             </button>
             <button
               type="button"
               class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
-              aria-label="Annuler"
+              :aria-label="$t('common.cancel')"
               @click="creating = false"
             >
               <X class="size-5" />
@@ -251,7 +249,7 @@ async function submitCreate() {
           <Check
             v-if="isSelected(root.iri) || hasSelectedChild(root)"
             class="size-5 text-indigo-600"
-            aria-label="Sélectionnée"
+            :aria-label="$t('common.selectedCategory')"
           />
           <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </button>

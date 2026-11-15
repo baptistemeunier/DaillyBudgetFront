@@ -14,7 +14,7 @@ function pick(name: string) {
   <div
     class="grid max-h-52 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5"
     role="radiogroup"
-    :aria-label="label ?? 'Icône'"
+    :aria-label="label ?? $t('common.icon')"
   >
     <button
       v-for="name in CATEGORY_ICON_CHOICES"

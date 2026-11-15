@@ -8,6 +8,7 @@ import { PERIOD_LENGTHS, type PeriodLength } from '~/utils/period'
 
 definePageMeta({ tabs: true })
 
+const { t } = useI18n()
 const { months, to, view, query: periodQuery, setQuery, shift, canGoNext, period, label } = useStatementPeriod()
 const { data: statement, isPending, isError, isPlaceholderData, refetch } = useStatementQuery(period)
 const { data: tree } = useCategoriesQuery()
@@ -32,7 +33,7 @@ const rows = computed<StatementRowView[]>(() => {
     result.push({
       key: iri ?? `line-${result.length}`,
       icon: node?.icon ?? DEFAULT_CATEGORY_ICON,
-      label: node?.label ?? 'Catégorie',
+      label: node?.label ?? t('common.category'),
       color: categoryColor(node?.code ?? null) ?? OTHER_COLOR,
       cents,
       targetCents: targetCents > 0 ? targetCents : null,
@@ -54,7 +55,7 @@ const rows = computed<StatementRowView[]>(() => {
     result.push({
       key: 'uncategorized',
       icon: UNCATEGORIZED_ICON,
-      label: 'Non catégorisé',
+      label: t('categories.uncategorized'),
       color: UNCATEGORIZED_COLOR,
       cents: uncategorized,
       targetCents: null,
@@ -68,7 +69,7 @@ const rows = computed<StatementRowView[]>(() => {
   return result.sort((a, b) => b.cents - a.cents)
 })
 
-// Categories without a chart color fold into one "Autres" segment.
+// Categories without a chart color fold into one "Other" segment.
 const segments = computed<DonutSegment[]>(() => {
   const result: DonutSegment[] = []
   let other = 0
@@ -77,7 +78,7 @@ const segments = computed<DonutSegment[]>(() => {
     if (row.color === OTHER_COLOR) other += row.cents
     else result.push({ key: row.key, label: row.label, color: row.color, cents: row.cents })
   }
-  if (other > 0) result.push({ key: 'other', label: 'Autres', color: OTHER_COLOR, cents: other })
+  if (other > 0) result.push({ key: 'other', label: t('budget.other'), color: OTHER_COLOR, cents: other })
   return result.sort((a, b) => b.cents - a.cents)
 })
 
@@ -90,7 +91,11 @@ const donutLabel = computed(() => {
     .slice(0, 3)
     .map((s) => `${s.label} ${formatCents(s.cents, currency.value)}`)
     .join(', ')
-  return `${isExpenses.value ? 'Dépenses' : 'Revenus'} : ${formatCents(totalCents.value, currency.value)}${top ? `. Principaux postes : ${top}` : ''}`
+  const total = t('budget.donutTotal', {
+    kind: isExpenses.value ? t('budget.expenses') : t('budget.income'),
+    amount: formatCents(totalCents.value, currency.value),
+  })
+  return top ? `${total}. ${t('budget.donutTop', { top })}` : total
 })
 
 // --- Budget card ----------------------------------------------------------
@@ -103,20 +108,22 @@ const days = computed(() => daysLeft(to.value))
 const budgetFooter = computed(() => {
   const diff = targetCents.value - totalCents.value
   const amount =
-    diff >= 0 ? `Reste ${formatCents(diff, currency.value)}` : `Dépassé de ${formatCents(-diff, currency.value)}`
+    diff >= 0
+      ? t('budget.left', { amount: formatCents(diff, currency.value) })
+      : t('budget.overBy', { amount: formatCents(-diff, currency.value) })
   if (days.value === null) return amount
-  return `${amount} · ${days.value} jour${days.value > 1 ? 's' : ''} restant${days.value > 1 ? 's' : ''}`
+  return `${amount} · ${t('budget.daysLeft', days.value)}`
 })
 
-const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
+const lengthLabel = (n: PeriodLength) => (n === 12 ? t('period.year') : t('period.months', n))
 </script>
 
 <template>
   <main class="flex flex-col gap-4 px-4 pt-8 pb-24">
-    <h1 class="text-[28px] font-bold">Budget</h1>
+    <h1 class="text-[28px] font-bold">{{ $t('budget.title') }}</h1>
 
     <!-- Period + view -->
-    <section class="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3" aria-label="Période">
+    <section class="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3" :aria-label="$t('period.label')">
       <PeriodNav :label="label" :can-go-next="canGoNext" @shift="shift" />
 
       <div class="grid grid-cols-4 gap-2">
@@ -142,7 +149,7 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
           :class="isExpenses ? 'bg-indigo-600 text-white' : 'text-slate-600'"
           @click="setQuery({ view: 'expenses' })"
         >
-          Dépenses
+          {{ $t('budget.expenses') }}
         </button>
         <button
           type="button"
@@ -152,7 +159,7 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
           :class="!isExpenses ? 'bg-indigo-600 text-white' : 'text-slate-600'"
           @click="setQuery({ view: 'income' })"
         >
-          Revenus
+          {{ $t('budget.income') }}
         </button>
       </div>
     </section>
@@ -163,9 +170,9 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
     </template>
 
     <div v-else-if="isError" class="flex items-center justify-between gap-3 rounded-3xl bg-rose-50 px-4 py-4">
-      <span class="text-sm text-rose-800">Impossible de charger le budget.</span>
+      <span class="text-sm text-rose-800">{{ $t('errors.loadBudget') }}</span>
       <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-        Réessayer
+        {{ $t('common.retry') }}
       </button>
     </div>
 
@@ -175,7 +182,7 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
         <StatementDonut
           :segments="segments"
           :total="formatCents(totalCents, currency)"
-          :caption="isExpenses ? 'Dépenses' : 'Revenus'"
+          :caption="isExpenses ? $t('budget.expenses') : $t('budget.income')"
           :aria-label="donutLabel"
         />
       </section>
@@ -188,7 +195,7 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
           class="flex flex-col gap-2 rounded-3xl border border-slate-200 bg-white p-4 hover:bg-slate-50"
         >
           <span class="flex items-center gap-2">
-            <span class="text-[15px] font-semibold">Budget</span>
+            <span class="text-[15px] font-semibold">{{ $t('budget.title') }}</span>
             <span class="size-2 rounded-full" :class="budgetBar" aria-hidden="true" />
             <span class="ml-auto text-[15px] tabular-nums">
               <span class="font-bold">{{ formatCents(totalCents, currency) }}</span>
@@ -201,7 +208,7 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
           </span>
           <span class="flex items-center justify-between text-[13px]">
             <span class="text-slate-500">{{ budgetFooter }}</span>
-            <span class="font-semibold tabular-nums" :class="budgetText">{{ budgetPercent }} %</span>
+            <span class="font-semibold tabular-nums" :class="budgetText">{{ $t('common.percent', { n: budgetPercent }) }}</span>
           </span>
         </NuxtLink>
         <NuxtLink
@@ -210,17 +217,17 @@ const lengthLabel = (n: PeriodLength) => (n === 12 ? '1 an' : `${n} mois`)
           class="flex items-center justify-between gap-3 rounded-3xl border border-dashed border-indigo-200 bg-indigo-50 p-4"
         >
           <span class="flex flex-col">
-            <span class="text-[15px] font-semibold text-indigo-700">Définir mon budget</span>
-            <span class="text-[13px] text-indigo-700/80">Fixez un montant mensuel et répartissez-le par catégorie.</span>
+            <span class="text-[15px] font-semibold text-indigo-700">{{ $t('budget.setUp') }}</span>
+            <span class="text-[13px] text-indigo-700/80">{{ $t('budget.setUpHint') }}</span>
           </span>
           <ChevronRight class="size-5 flex-none text-indigo-700" aria-hidden="true" />
         </NuxtLink>
       </template>
 
       <!-- Categories (also the donut legend) -->
-      <section class="rounded-3xl border border-slate-200 bg-white px-4 py-1" aria-label="Par catégorie">
+      <section class="rounded-3xl border border-slate-200 bg-white px-4 py-1" :aria-label="$t('budget.byCategory')">
         <p v-if="!rows.length" class="py-6 text-center text-sm text-slate-500">
-          {{ isExpenses ? 'Aucune dépense sur cette période.' : 'Aucun revenu sur cette période.' }}
+          {{ isExpenses ? $t('budget.noExpenses') : $t('budget.noIncome') }}
         </p>
         <ul v-else class="divide-y divide-slate-100">
           <li v-for="row in rows" :key="row.key">

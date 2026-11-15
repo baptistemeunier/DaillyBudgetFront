@@ -3,6 +3,7 @@ import { CircleUserRound, Plus, RefreshCw } from 'lucide-vue-next'
 
 definePageMeta({ tabs: true })
 
+const { t } = useI18n()
 const { data: connections, isPending, isError, refetch } = useConnectionsQuery()
 const { data: allAccounts } = useAllAccountsQuery()
 
@@ -32,10 +33,10 @@ const orphans = computed(() => {
       const connectionId = href ? halId({ _links: { self: { href } } }) : null
       if (connectionId && listed.has(connectionId)) return null
       const note = account.manual
-        ? ACCOUNT_TYPE_LABELS[account.type]
+        ? accountTypeLabel(account.type)
         : connectionId
-          ? 'Connexion supprimée'
-          : 'Sans connexion'
+          ? t('home.connectionDeleted')
+          : t('home.noConnection')
       return { account, note }
     })
     .filter((o) => o !== null)
@@ -70,12 +71,12 @@ const setOpen = (id: string, value: boolean) => {
 
 <template>
   <main class="flex flex-col gap-5 px-4 pt-6 pb-24">
-    <PageHeader title="Mes comptes">
+    <PageHeader :title="$t('home.title')">
       <template #leading>
         <NuxtLink
           to="/profile"
           class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Mon profil"
+          :aria-label="$t('profile.title')"
         >
           <CircleUserRound class="size-6" />
         </NuxtLink>
@@ -84,7 +85,7 @@ const setOpen = (id: string, value: boolean) => {
         <button
           type="button"
           class="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60"
-          aria-label="Synchroniser les comptes"
+          :aria-label="$t('home.syncAll')"
           :disabled="syncingAll || !connections?.length"
           @click="syncAll"
         >
@@ -97,7 +98,7 @@ const setOpen = (id: string, value: boolean) => {
 
     <section class="flex flex-col gap-3" aria-labelledby="banks-title">
       <h2 id="banks-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-        Banques connectées
+        {{ $t('home.connectedBanks') }}
       </h2>
 
       <template v-if="isPending">
@@ -105,14 +106,14 @@ const setOpen = (id: string, value: boolean) => {
       </template>
 
       <div v-else-if="isError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger vos banques.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadYourBanks') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <p v-else-if="!connections?.length" class="rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-        Aucune banque connectée pour l'instant.
+        {{ $t('home.noBank') }}
       </p>
 
       <template v-else>
@@ -129,13 +130,13 @@ const setOpen = (id: string, value: boolean) => {
         to="/banks/new"
         class="flex min-h-16 items-center justify-center gap-2 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 text-[15px] font-semibold text-indigo-700"
       >
-        <Plus class="size-5" aria-hidden="true" /> Ajouter une banque
+        <Plus class="size-5" aria-hidden="true" /> {{ $t('banks.add') }}
       </NuxtLink>
     </section>
 
     <section v-if="orphans.length" class="flex flex-col gap-3" aria-labelledby="other-accounts-title">
       <h2 id="other-accounts-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-        Autres comptes
+        {{ $t('home.otherAccounts') }}
       </h2>
       <div class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <AccountRow

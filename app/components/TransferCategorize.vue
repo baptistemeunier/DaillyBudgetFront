@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // "Transfert" tab of the categorize sheet: pick the other account, the category follows.
-// - checking account -> transfer category ("Virements entre comptes"), full amount;
-// - savings / investment account -> then pick the envelope (a sub-category of Épargne: the API refuses
+// - checking account -> transfer category (internal.transfers), full amount;
+// - savings / investment account -> then pick the envelope (a sub-category of the saving root: the API refuses
 //   a root), full amount. A manual account gets the mirror transaction (counterpartAccount);
 //   in another currency, the received amount is asked last.
 import { Check, ChevronLeft, ChevronRight } from 'lucide-vue-next'
@@ -11,6 +11,7 @@ import type { CategoryTree } from '~/utils/categories'
 
 const props = defineProps<{ transaction: Transaction; tree: CategoryTree; pending?: boolean }>()
 const emit = defineEmits<{ save: [splits: SplitInput[]] }>()
+const { t } = useI18n()
 
 const { data: allAccounts, isPending: accountsPending, isError: accountsError, refetch } = useAllAccountsQuery()
 
@@ -23,8 +24,8 @@ const ownHref = computed(() => props.transaction._links.account?.href)
 const others = computed(() => (allAccounts.value ?? []).filter((a) => a._links.self.href !== ownHref.value))
 const groups = computed(() =>
   [
-    { id: 'saving', title: 'Épargne et placements', items: others.value.filter((a) => a.type !== 'checking') },
-    { id: 'checking', title: 'Comptes courants', items: others.value.filter((a) => a.type === 'checking') },
+    { id: 'saving', title: t('transfer.savingGroup'), items: others.value.filter((a) => a.type !== 'checking') },
+    { id: 'checking', title: accountScopeLabel('checking'), items: others.value.filter((a) => a.type === 'checking') },
   ].filter((g) => g.items.length),
 )
 
@@ -114,18 +115,22 @@ function saveConverted() {
       class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
       @click="envelope = null"
     >
-      <ChevronLeft class="size-5" aria-hidden="true" /> Changer d'enveloppe
+      <ChevronLeft class="size-5" aria-hidden="true" /> {{ $t('transfer.changeEnvelope') }}
     </button>
     <p class="text-sm text-slate-600">
-      {{ accountName(converting) }} est en {{ converting.balanceCurrency }}. Combien
-      {{ outgoing ? 'a été reçu sur ce compte' : 'est sorti de ce compte' }} ?
+      {{
+        $t(outgoing ? 'transfer.receivedQuestion' : 'transfer.sentQuestion', {
+          account: accountName(converting),
+          currency: converting.balanceCurrency,
+        })
+      }}
     </p>
     <label class="relative">
-      <span class="sr-only">Montant en {{ converting.balanceCurrency }}</span>
+      <span class="sr-only">{{ $t('transfer.amountIn', { currency: converting.balanceCurrency }) }}</span>
       <input
         v-model="received"
         inputmode="decimal"
-        placeholder="0,00"
+        :placeholder="$t('common.amountPlaceholder')"
         autocomplete="off"
         class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pr-14 pl-3 text-right text-[17px] font-semibold tabular-nums outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
       />
@@ -133,13 +138,13 @@ function saveConverted() {
         {{ converting.balanceCurrency }}
       </span>
     </label>
-    <p v-if="received && !receivedCents" class="text-xs text-rose-700">Montant invalide.</p>
+    <p v-if="received && !receivedCents" class="text-xs text-rose-700">{{ $t('common.invalidAmountSentence') }}</p>
     <button
       type="submit"
       class="min-h-11 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white disabled:opacity-40"
       :disabled="!receivedCents || pending"
     >
-      {{ pending ? 'Enregistrement…' : 'Enregistrer' }}
+      {{ pending ? $t('common.saving') : $t('common.save') }}
     </button>
   </form>
 
@@ -150,11 +155,10 @@ function saveConverted() {
       class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
       @click="chosen = null"
     >
-      <ChevronLeft class="size-5" aria-hidden="true" /> Changer de compte
+      <ChevronLeft class="size-5" aria-hidden="true" /> {{ $t('transfer.changeAccount') }}
     </button>
     <p class="text-sm text-slate-600">
-      {{ outgoing ? 'Dans quelle enveloppe va cet argent' : 'De quelle enveloppe sort cet argent' }}
-      ({{ accountName(chosen) }}) ?
+      {{ $t(outgoing ? 'transfer.envelopeIn' : 'transfer.envelopeOut', { account: accountName(chosen) }) }}
     </p>
     <CategoryPicker
       :tree="tree"
@@ -168,11 +172,11 @@ function saveConverted() {
   <!-- Other account -->
   <div v-else class="flex flex-col gap-4">
     <p class="text-sm text-slate-600">
-      {{ outgoing ? 'Vers quel compte va cet argent ?' : "D'où vient cet argent ?" }}
+      {{ outgoing ? $t('transfer.accountTo') : $t('transfer.accountFrom') }}
     </p>
 
     <p v-if="currentLabel" class="rounded-xl bg-indigo-50 px-3 py-2 text-[13px] text-indigo-800">
-      Actuellement : {{ currentLabel }}.
+      {{ $t('transfer.current', { label: currentLabel }) }}
     </p>
 
     <div v-if="accountsPending" class="flex flex-col gap-2" aria-hidden="true">
@@ -180,12 +184,12 @@ function saveConverted() {
     </div>
 
     <div v-else-if="accountsError" class="flex items-center justify-between gap-3 rounded-xl bg-rose-50 px-3 py-2">
-      <span class="text-sm text-rose-800">Impossible de charger vos comptes.</span>
-      <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetch()">Réessayer</button>
+      <span class="text-sm text-rose-800">{{ $t('errors.loadYourAccounts') }}</span>
+      <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetch()">{{ $t('common.retry') }}</button>
     </div>
 
     <p v-else-if="!groups.length" class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">
-      Aucun autre compte. Ajoute un compte manuel (Livret A, PEA…) depuis ton profil.
+      {{ $t('transfer.noOther') }}
     </p>
 
     <section
@@ -211,10 +215,10 @@ function saveConverted() {
             <span class="flex min-w-0 flex-1 flex-col">
               <span class="truncate text-[15px] font-medium">{{ accountName(a) }}</span>
               <span class="text-xs text-slate-500">
-                {{ ACCOUNT_TYPE_LABELS[a.type] }}<template v-if="a.iban"> · {{ maskIban(a.iban) }}</template>
+                {{ accountTypeLabel(a.type) }}<template v-if="a.iban"> · {{ maskIban(a.iban) }}</template>
               </span>
             </span>
-            <Check v-if="a._links.self.href === currentAccount" class="size-5 text-indigo-600" aria-label="Sélectionné" />
+            <Check v-if="a._links.self.href === currentAccount" class="size-5 text-indigo-600" :aria-label="$t('common.selectedAccount')" />
             <ChevronRight v-else-if="a.type !== 'checking'" class="size-4 flex-none text-slate-400" aria-hidden="true" />
           </button>
         </li>

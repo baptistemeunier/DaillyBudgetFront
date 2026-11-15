@@ -2,16 +2,16 @@
 import { ChartPie, House, PiggyBank } from 'lucide-vue-next'
 
 const tabs = [
-  { to: '/', label: 'Comptes', icon: House },
-  { to: '/budget', label: 'Budget', icon: ChartPie },
-  { to: '/savings', label: 'Épargne', icon: PiggyBank },
+  { to: '/', label: 'nav.accounts', icon: House },
+  { to: '/budget', label: 'nav.budget', icon: ChartPie },
+  { to: '/savings', label: 'nav.savings', icon: PiggyBank },
 ]
 </script>
 
 <template>
   <nav
     class="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]"
-    aria-label="Navigation principale"
+    :aria-label="$t('nav.label')"
   >
     <ul class="grid h-16 grid-cols-3">
       <li v-for="tab in tabs" :key="tab.to">
@@ -21,7 +21,7 @@ const tabs = [
           exact-active-class="!text-indigo-600"
         >
           <component :is="tab.icon" class="size-6" aria-hidden="true" />
-          {{ tab.label }}
+          {{ $t(tab.label) }}
         </NuxtLink>
       </li>
     </ul>

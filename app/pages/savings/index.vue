@@ -3,10 +3,11 @@ import { CircleUserRound, Plus } from 'lucide-vue-next'
 
 definePageMeta({ tabs: true })
 
+const { t } = useI18n()
 const MONTHS = 6
 const thisMonth = currentMonth()
 
-// Last 6 months for the chart; this month alone for the envelopes ("ce mois") and what's left to allocate.
+// Last 6 months for the chart; this month alone for the envelopes ("this month") and what's left to allocate.
 const { data: history, isPending: historyPending, isError: historyError, refetch: refetchHistory } =
   useSavingStatementQuery(periodOf(thisMonth, MONTHS))
 const { data: month, isPending: monthPending, isError: monthError, refetch: refetchMonth } =
@@ -26,16 +27,16 @@ const currentNet = computed(() => {
   return m ? toCents(m.creditAmount) - toCents(m.debitAmount) : 0
 })
 
-const monthName = new Intl.DateTimeFormat('fr-FR', { month: 'long', timeZone: 'UTC' }).format(new Date(`${thisMonth}-15T12:00:00Z`))
+const currentMonthName = computed(() => monthName(thisMonth))
 const leftToAllocate = computed(() => (month.value ? toCents(month.value.uncategorizedAmount) : 0))
 
-// Envelopes: the sub-categories of Épargne (the root itself isn't one).
+// Envelopes: the sub-categories of the saving root (the root itself isn't one).
 const envelopes = computed(() =>
   (month.value?.envelopes ?? [])
     .map((envelope) => {
       const iri = splitCategoryIri(envelope) ?? ''
       const node = tree.value?.byIri.get(iri)
-      const name = node?.label ?? 'Enveloppe supprimée'
+      const name = node?.label ?? t('envelope.deleted')
       // Its own icon, else one suggested from the name (envelopes created before icons).
       const icon = (node?.iconName && categoryIcon(node.iconName)) || categoryIcon(suggestEnvelopeIcon(name))!
       return { envelope, iri, node, name, icon }
@@ -51,10 +52,7 @@ const savingBalance = computed(() =>
     .filter((a) => a.balance != null && (a.balanceCurrency ?? 'EUR') === currency.value)
     .reduce((sum, a) => sum + toCents(a.balance!), 0),
 )
-const savingNames = computed(() => {
-  const names = savingAccounts.value.map(accountName)
-  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} et ${names.at(-1)}`
-})
+const savingNames = computed(() => formatList(savingAccounts.value.map(accountName)))
 
 // Envelope sheet: create (iri null) or edit an envelope's name and target.
 const savingRoot = computed(() => tree.value?.roots.find((r) => r.type === 'saving'))
@@ -68,12 +66,12 @@ function openSheet(iri: string | null) {
 
 <template>
   <main class="flex flex-col gap-5 px-4 pt-6 pb-24">
-    <PageHeader title="Épargne">
+    <PageHeader :title="$t('savings.title')">
       <template #leading>
         <NuxtLink
           to="/profile"
           class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Mon profil"
+          :aria-label="$t('profile.title')"
         >
           <CircleUserRound class="size-6" />
         </NuxtLink>
@@ -89,13 +87,13 @@ function openSheet(iri: string | null) {
       </div>
 
       <div v-else-if="historyError || !history" class="flex items-center justify-between gap-3 rounded-xl bg-rose-50 px-3 py-2">
-        <span class="text-sm text-rose-800">Impossible de charger ton épargne.</span>
-        <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchHistory()">Réessayer</button>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadSavings') }}</span>
+        <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchHistory()">{{ $t('common.retry') }}</button>
       </div>
 
       <template v-else>
         <div class="flex flex-col gap-1">
-          <h2 id="saved-title" class="text-[13px] text-slate-500">Épargné sur {{ history.months }} mois</h2>
+          <h2 id="saved-title" class="text-[13px] text-slate-500">{{ $t('savings.savedOver', history.months) }}</h2>
           <p
             class="text-[34px] leading-tight font-bold tabular-nums"
             :class="net > 0 ? 'text-emerald-700' : net < 0 ? 'text-rose-700' : 'text-slate-900'"
@@ -103,7 +101,7 @@ function openSheet(iri: string | null) {
             {{ formatSignedCents(net, currency) }}
           </p>
           <p class="text-[13px] text-slate-500">
-            Entrées − sorties · en moyenne {{ formatCents(average, currency) }} par mois
+            {{ $t('savings.average', { amount: formatCents(average, currency) }) }}
           </p>
         </div>
 
@@ -111,15 +109,15 @@ function openSheet(iri: string | null) {
 
         <dl class="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
           <div class="flex flex-col gap-0.5">
-            <dt class="text-[13px] text-slate-500">Entrées</dt>
+            <dt class="text-[13px] text-slate-500">{{ $t('savings.in') }}</dt>
             <dd class="text-[15px] font-semibold tabular-nums">{{ formatCents(credit, currency) }}</dd>
           </div>
           <div class="flex flex-col gap-0.5">
-            <dt class="text-[13px] text-slate-500">Sorties</dt>
+            <dt class="text-[13px] text-slate-500">{{ $t('savings.out') }}</dt>
             <dd class="text-[15px] font-semibold tabular-nums">{{ formatCents(debit, currency) }}</dd>
           </div>
           <div class="flex flex-col gap-0.5">
-            <dt class="text-[13px] text-slate-500">Épargné (en cours)</dt>
+            <dt class="text-[13px] text-slate-500">{{ $t('savings.savedSoFar') }}</dt>
             <dd
               class="text-[15px] font-semibold tabular-nums"
               :class="currentNet > 0 ? 'text-emerald-700' : currentNet < 0 ? 'text-rose-700' : ''"
@@ -137,21 +135,21 @@ function openSheet(iri: string | null) {
       class="flex flex-col gap-2 rounded-3xl bg-indigo-600 p-5 text-white shadow-lg shadow-indigo-200"
       aria-labelledby="allocate-title"
     >
-      <h2 id="allocate-title" class="text-[13px] text-indigo-100">Reste à répartir — {{ monthName }}</h2>
+      <h2 id="allocate-title" class="text-[13px] text-indigo-100">{{ $t('savings.leftToAllocate', { month: currentMonthName }) }}</h2>
       <p class="text-[30px] leading-tight font-bold tabular-nums">{{ formatCents(leftToAllocate, currency) }}</p>
-      <p class="text-[13px] text-indigo-100">Une partie de ton épargne de {{ monthName }} n'est dans aucune enveloppe.</p>
+      <p class="text-[13px] text-indigo-100">{{ $t('savings.leftToAllocateHint', { month: currentMonthName }) }}</p>
       <NuxtLink
         to="/transactions/to-categorize?accounts=savings"
         class="mt-2 inline-flex min-h-12 items-center self-start rounded-full bg-white px-5 text-[15px] font-semibold text-indigo-700"
       >
-        Répartir dans mes enveloppes
+        {{ $t('savings.allocate') }}
       </NuxtLink>
     </section>
 
     <!-- Envelopes -->
     <section class="flex flex-col gap-3" aria-labelledby="envelopes-title">
       <div class="flex items-baseline justify-between">
-        <h2 id="envelopes-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Mes enveloppes</h2>
+        <h2 id="envelopes-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">{{ $t('savings.envelopes') }}</h2>
         <span v-if="month" class="text-[15px] font-semibold tabular-nums">{{ formatCents(envelopesTotal, currency) }}</span>
       </div>
 
@@ -160,9 +158,9 @@ function openSheet(iri: string | null) {
       </template>
 
       <div v-else-if="monthError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger tes enveloppes.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadEnvelopes') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetchMonth()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
@@ -186,12 +184,17 @@ function openSheet(iri: string | null) {
         :disabled="!savingRoot"
         @click="openSheet(null)"
       >
-        <Plus class="size-5" aria-hidden="true" /> Nouvelle enveloppe
+        <Plus class="size-5" aria-hidden="true" /> {{ $t('envelope.new') }}
       </button>
 
       <p v-if="savingAccounts.length && month" class="text-[13px] text-slate-500">
-        Les enveloppes sont virtuelles : l'argent reste sur tes comptes d'épargne ({{ savingNames }},
-        {{ formatCents(savingBalance, currency) }}). Non affecté : {{ formatCents(savingBalance - envelopesTotal, currency) }}.
+        {{
+          $t('savings.virtualNote', {
+            names: savingNames,
+            balance: formatCents(savingBalance, currency),
+            unallocated: formatCents(savingBalance - envelopesTotal, currency),
+          })
+        }}
       </p>
     </section>
 

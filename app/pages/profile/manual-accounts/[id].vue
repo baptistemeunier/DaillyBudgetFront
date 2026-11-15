@@ -62,12 +62,12 @@ async function submit() {
 <template>
   <form class="flex min-h-dvh flex-col" novalidate @submit.prevent="submit">
     <main class="flex flex-1 flex-col gap-4 px-4 pt-6 pb-6">
-      <PageHeader title="Compte manuel">
+      <PageHeader :title="$t('manualAccount.title')">
         <template #leading>
           <button
             type="button"
             class="-ml-2 flex size-11 items-center justify-center rounded-full hover:bg-slate-100"
-            aria-label="Fermer"
+            :aria-label="$t('common.close')"
             @click="close"
           >
             <X class="size-5" />
@@ -78,16 +78,16 @@ async function submit() {
       <div v-if="isPending" class="h-64 animate-pulse rounded-2xl border border-slate-200 bg-white" aria-hidden="true" />
 
       <div v-else-if="isError || !account" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger ce compte.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadAccount') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <template v-else>
         <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4">
           <div class="flex flex-col gap-1.5">
-            <label :for="nameId" class="text-[13px] font-medium text-slate-700">Nom du compte</label>
+            <label :for="nameId" class="text-[13px] font-medium text-slate-700">{{ $t('manualAccount.name') }}</label>
             <input
               :id="nameId"
               v-model="name"
@@ -97,11 +97,11 @@ async function submit() {
               :aria-invalid="nameError"
               class="min-h-12 rounded-xl border border-slate-300 bg-white px-3 text-[15px] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none aria-invalid:border-rose-400"
             />
-            <p v-if="nameError" class="text-xs text-rose-700">Donne un nom au compte.</p>
+            <p v-if="nameError" class="text-xs text-rose-700">{{ $t('manualAccount.nameRequired') }}</p>
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <span class="text-[13px] font-medium text-slate-700">Type de compte</span>
+            <span class="text-[13px] font-medium text-slate-700">{{ $t('accounts.typeLabel') }}</span>
             <ManualAccountTypePicker v-model="type" :disabled="update.isPending.value" />
           </div>
         </section>
@@ -113,17 +113,17 @@ async function submit() {
           <AccountTypeIcon :type="account.type" />
           <span class="flex min-w-0 flex-1 flex-col gap-0.5">
             <span class="text-[13px] text-slate-500">
-              Solde<template v-if="account.balanceAt"> · {{ dayLabel(dayKey(account.balanceAt)) }}</template>
+              {{ $t('common.balance') }}<template v-if="account.balanceAt"> · {{ dayLabel(dayKey(account.balanceAt)) }}</template>
             </span>
             <span class="text-[17px] font-bold tabular-nums">{{ balance ?? '—' }}</span>
           </span>
-          <span class="text-[13px] font-medium text-indigo-700">Historique</span>
+          <span class="text-[13px] font-medium text-indigo-700">{{ $t('manualAccount.history') }}</span>
           <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </NuxtLink>
       </template>
 
       <p v-if="update.isError.value" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
-        {{ apiErrorMessage(update.error.value, "L'enregistrement a échoué, réessayez.") }}
+        {{ apiErrorMessage(update.error.value, $t('errors.saveFailedRetry')) }}
       </p>
     </main>
 
@@ -137,7 +137,7 @@ async function submit() {
         :disabled="update.isPending.value || nameError"
       >
         <Loader2 v-if="update.isPending.value" class="size-5 animate-spin" aria-hidden="true" />
-        Enregistrer
+        {{ $t('common.save') }}
       </button>
     </footer>
   </form>

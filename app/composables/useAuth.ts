@@ -95,7 +95,7 @@ export function useAuth() {
     const pkce = storageGet<{ verifier: string; state: string; returnTo: string }>(session, PKCE_KEY)
     storageSet(session, PKCE_KEY, null)
 
-    if (!pkce || pkce.state !== state) throw new Error('État OAuth invalide, veuillez réessayer.')
+    if (!pkce || pkce.state !== state) throw new Error(i18nT('errors.oauthState'))
 
     const res = await $fetch<TokenResponse>('/api/oauth/token', {
       method: 'POST',

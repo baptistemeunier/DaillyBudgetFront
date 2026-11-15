@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const auth = useAuth()
+const { t } = useI18n()
 const error = ref<string | null>(null)
 
 onMounted(async () => {
@@ -11,14 +12,14 @@ onMounted(async () => {
     return
   }
   if (typeof code !== 'string' || typeof state !== 'string') {
-    error.value = 'Réponse du serveur d’authentification incomplète.'
+    error.value = t('auth.incompleteResponse')
     return
   }
 
   try {
     await navigateTo(await auth.handleCallback(code, state), { replace: true })
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Connexion impossible.'
+    error.value = e instanceof Error ? e.message : t('auth.failed')
   }
 })
 </script>
@@ -32,9 +33,9 @@ onMounted(async () => {
         class="min-h-11 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white"
         @click="auth.login('/')"
       >
-        Réessayer
+        {{ $t('common.retry') }}
       </button>
     </template>
-    <p v-else class="text-sm text-slate-500">Connexion en cours…</p>
+    <p v-else class="text-sm text-slate-500">{{ $t('auth.signingIn') }}</p>
   </main>
 </template>

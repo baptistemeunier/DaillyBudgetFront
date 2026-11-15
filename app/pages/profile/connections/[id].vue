@@ -3,13 +3,14 @@ import { ExternalLink, Loader2, RefreshCw } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const id = computed(() => String(route.params.id))
 
 const { data: connections, isPending: connectionsPending, isError: connectionsError, refetch } = useConnectionsQuery()
 const connection = computed(() => connections.value?.find((c) => halId(c) === id.value))
 
 const { data: bank } = useBankQuery(() => connection.value?._links.bank?.href)
-const bankName = computed(() => bank.value?.name ?? 'Banque')
+const bankName = computed(() => bank.value?.name ?? t('common.bank'))
 
 const {
   data: accounts,
@@ -44,7 +45,7 @@ function startReconnect() {
   if (bank.value) reconnect.start(bank.value.id)
 }
 
-// Deletion. Only "keep the accounts" exists for now (they move to "Autres comptes" on the home page).
+// Deletion. Only "keep the accounts" exists for now (they move to "Other accounts" on the home page).
 const remove = useDeleteConnection()
 const removeOpen = ref(false)
 function startRemove() {
@@ -70,18 +71,18 @@ async function confirmRemove() {
     <PageHeader back="/profile/connections">
       <span v-if="bank">{{ bank.name }}</span>
       <span v-else-if="connection || connectionsPending" class="inline-block h-6 w-32 animate-pulse rounded bg-slate-100 align-middle" />
-      <span v-else>Banque</span>
+      <span v-else>{{ $t('common.bank') }}</span>
     </PageHeader>
 
     <div v-if="connectionsError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-      <span class="text-sm text-rose-800">Impossible de charger cette banque.</span>
+      <span class="text-sm text-rose-800">{{ $t('errors.loadBank') }}</span>
       <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-        Réessayer
+        {{ $t('common.retry') }}
       </button>
     </div>
 
     <p v-else-if="!connectionsPending && !connection" class="rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-      Cette connexion n'existe plus.
+      {{ $t('connection.gone') }}
     </p>
 
     <template v-else-if="connection">
@@ -89,16 +90,16 @@ async function confirmRemove() {
         v-if="configureHref && !linked && !expired"
         class="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800"
       >
-        <span>La connexion n'est pas finalisée.</span>
+        <span>{{ $t('connection.notFinalized') }}</span>
         <a :href="configureHref" class="inline-flex h-8 flex-none items-center gap-1 rounded-full bg-amber-600 px-3 text-xs font-semibold text-white">
-          Finaliser <ExternalLink class="size-3.5" aria-hidden="true" />
+          {{ $t('common.finalize') }} <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
       </div>
 
       <div v-if="expired" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
         <span>
-          L'accès bancaire a expiré.
-          <span v-if="reconnect.isError.value" class="block font-semibold">La reconnexion a échoué, réessayez.</span>
+          {{ $t('connection.expired') }}
+          <span v-if="reconnect.isError.value" class="block font-semibold">{{ $t('errors.reconnectFailed') }}</span>
         </span>
         <button
           type="button"
@@ -106,39 +107,39 @@ async function confirmRemove() {
           :disabled="!bank || reconnect.isPending.value"
           @click="startReconnect"
         >
-          Reconnecter
+          {{ $t('common.reconnect') }}
           <Loader2 v-if="reconnect.isPending.value" class="size-3.5 animate-spin" aria-hidden="true" />
           <ExternalLink v-else class="size-3.5" aria-hidden="true" />
         </button>
       </div>
 
       <section class="flex flex-col gap-2" aria-labelledby="accounts-title">
-        <h2 id="accounts-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Comptes</h2>
+        <h2 id="accounts-title" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">{{ $t('connection.accounts') }}</h2>
 
         <div v-if="accountsPending" class="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white" aria-hidden="true" />
 
         <div v-else-if="accountsError" class="flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-          <span class="text-sm text-rose-800">Impossible de charger les comptes.</span>
-          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchAccounts()">Réessayer</button>
+          <span class="text-sm text-rose-800">{{ $t('errors.loadAccounts') }}</span>
+          <button type="button" class="min-h-11 font-semibold text-rose-800" @click="refetchAccounts()">{{ $t('common.retry') }}</button>
         </div>
 
         <p v-else-if="!accounts?.length" class="rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
-          Aucun compte pour cette connexion.
+          {{ $t('connection.noAccounts') }}
         </p>
 
         <AccountSettingsCard v-for="account in accounts" v-else :key="account._links.self.href" :account="account" />
       </section>
 
       <section v-if="linked" class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="sync-title">
-        <h2 id="sync-title" class="text-[15px] font-semibold">Synchronisation</h2>
+        <h2 id="sync-title" class="text-[15px] font-semibold">{{ $t('sync.title') }}</h2>
         <p class="text-[13px] text-slate-600">
-          <template v-if="syncing">Synchronisation en cours…</template>
+          <template v-if="syncing">{{ $t('sync.inProgress') }}</template>
           <template v-else-if="lastSync">
-            {{ syncFailed ? 'Échec de la dernière synchro' : 'Synchronisé' }} {{ relativeTime(lastSync) }}.
+            {{ $t(syncFailed ? 'sync.lastFailedAgo' : 'sync.syncedAgo', { when: relativeTime(lastSync) }) }}.
           </template>
-          Les nouvelles transactions peuvent mettre quelques minutes à apparaître.
+          {{ $t('sync.delayHint') }}
         </p>
-        <p v-if="sync.isError.value" class="text-[13px] font-semibold text-rose-800" role="alert">La synchronisation a échoué, réessayez.</p>
+        <p v-if="sync.isError.value" class="text-[13px] font-semibold text-rose-800" role="alert">{{ $t('errors.syncFailedRetry') }}</p>
         <button
           type="button"
           class="mt-1 inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-700 disabled:opacity-60"
@@ -146,22 +147,21 @@ async function confirmRemove() {
           @click="startSync"
         >
           <RefreshCw class="size-4" :class="{ 'animate-spin': syncing }" aria-hidden="true" />
-          Synchroniser maintenant
+          {{ $t('sync.now') }}
         </button>
       </section>
 
       <section class="flex flex-col gap-2 rounded-2xl border border-rose-200 bg-white p-4" aria-labelledby="delete-title">
-        <h2 id="delete-title" class="text-[15px] font-semibold text-rose-700">Supprimer la banque</h2>
+        <h2 id="delete-title" class="text-[15px] font-semibold text-rose-700">{{ $t('connection.deleteTitle') }}</h2>
         <p class="text-[13px] text-slate-600">
-          Supprime la connexion à {{ bankName }} et l'autorisation d'accès. Tu choisis ensuite de garder ses comptes et
-          leur historique, ou de tout effacer.
+          {{ $t('connection.deleteHint', { bank: bankName }) }}
         </p>
         <button
           type="button"
           class="mt-1 inline-flex min-h-11 items-center self-start rounded-full border border-rose-300 px-4 text-sm font-semibold text-rose-700 hover:bg-rose-50"
           @click="startRemove"
         >
-          Supprimer {{ bankName }}
+          {{ $t('connection.deleteBank', { bank: bankName }) }}
         </button>
       </section>
 
@@ -170,7 +170,7 @@ async function confirmRemove() {
         :bank-name="bankName"
         :account-names="(accounts ?? []).map(accountName)"
         :pending="remove.isPending.value"
-        :error="remove.isError.value ? 'La suppression a échoué, réessayez.' : null"
+        :error="remove.isError.value ? $t('errors.deleteFailedRetry') : null"
         @confirm="confirmRemove"
       />
     </template>

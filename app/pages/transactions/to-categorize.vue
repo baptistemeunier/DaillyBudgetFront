@@ -112,24 +112,22 @@ function back() {
         <button
           type="button"
           class="-ml-2 flex size-11 flex-none items-center justify-center rounded-full hover:bg-slate-100"
-          aria-label="Retour"
+          :aria-label="$t('common.back')"
           @click="back"
         >
           <ChevronLeft class="size-5" />
         </button>
         <div class="flex min-w-0 flex-1 flex-col">
           <h1 class="truncate text-lg font-bold">
-            <template v-if="selecting">
-              {{ selection.size }} sélectionnée{{ selection.size > 1 ? 's' : '' }}
-            </template>
-            <template v-else>À catégoriser</template>
+            <template v-if="selecting">{{ $t('toCategorize.selected', selection.size) }}</template>
+            <template v-else>{{ $t('toCategorize.title') }}</template>
           </h1>
           <p class="truncate text-[13px] text-slate-500" aria-live="polite">
             <template v-if="remaining != null">
-              {{ remaining }} transaction{{ remaining > 1 ? 's' : '' }} restante{{ remaining > 1 ? 's' : '' }}
+              {{ $t('toCategorize.remaining', remaining) }}
               ·
             </template>
-            {{ scope ? ACCOUNT_SCOPES[scope].label : 'Tous comptes' }}
+            {{ scope ? accountScopeLabel(scope) : $t('toCategorize.allAccounts') }}
           </p>
         </div>
         <template v-if="selecting">
@@ -138,14 +136,14 @@ function back() {
             class="min-h-11 flex-none rounded-full px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
             @click="toggleAll"
           >
-            {{ allSelected ? 'Aucune' : 'Tout' }}
+            {{ allSelected ? $t('toCategorize.selectNone') : $t('toCategorize.selectAll') }}
           </button>
           <button
             type="button"
             class="-mr-2 min-h-11 flex-none rounded-full px-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
             @click="stopSelecting"
           >
-            Annuler
+            {{ $t('common.cancel') }}
           </button>
         </template>
         <button
@@ -154,7 +152,7 @@ function back() {
           class="-mr-2 min-h-11 flex-none rounded-full px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
           @click="startSelecting"
         >
-          Sélectionner
+          {{ $t('toCategorize.select') }}
         </button>
       </div>
     </header>
@@ -165,15 +163,15 @@ function back() {
       </div>
 
       <div v-else-if="isError" class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
-        <span class="text-sm text-rose-800">Impossible de charger les transactions.</span>
+        <span class="text-sm text-rose-800">{{ $t('errors.loadTransactions') }}</span>
         <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="refetch()">
-          Réessayer
+          {{ $t('common.retry') }}
         </button>
       </div>
 
       <div v-else-if="isEmpty" class="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center">
-        <p class="text-[15px] font-semibold">Tout est catégorisé 🎉</p>
-        <NuxtLink to="/" class="text-sm font-semibold text-indigo-700">Retour à l'accueil</NuxtLink>
+        <p class="text-[15px] font-semibold">{{ $t('toCategorize.done') }}</p>
+        <NuxtLink to="/" class="text-sm font-semibold text-indigo-700">{{ $t('toCategorize.backHome') }}</NuxtLink>
       </div>
 
       <template v-else>
@@ -206,9 +204,9 @@ function back() {
           v-else-if="isFetchNextPageError"
           class="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3"
         >
-          <span class="text-sm text-rose-800">Chargement interrompu.</span>
+          <span class="text-sm text-rose-800">{{ $t('common.loadInterrupted') }}</span>
           <button type="button" class="min-h-11 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white" @click="fetchNextPage()">
-            Réessayer
+            {{ $t('common.retry') }}
           </button>
         </div>
 
@@ -227,7 +225,7 @@ function back() {
         :disabled="selection.size === 0"
         @click="openBulk"
       >
-        Catégoriser{{ selection.size ? ` (${selection.size})` : '' }}
+        {{ $t('todo.toCategorize.cta') }}{{ selection.size ? ` (${selection.size})` : '' }}
       </button>
     </div>
 

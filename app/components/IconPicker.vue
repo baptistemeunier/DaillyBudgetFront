@@ -15,7 +15,7 @@ const current = computed(() => categoryIcon(model.value) ?? DEFAULT_CATEGORY_ICO
     :class="open ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200'"
     :aria-expanded="open"
     :aria-controls="controls"
-    aria-label="Changer l'icône"
+    :aria-label="$t('common.changeIcon')"
     @click="open = !open"
   >
     <component :is="current" class="size-5" />

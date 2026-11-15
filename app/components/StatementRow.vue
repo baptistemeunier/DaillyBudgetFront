@@ -40,12 +40,12 @@ const bar = computed(() => budgetStatusColor(ratio.value))
       <span class="text-[13px] text-slate-500">
         <template v-if="row.percent !== null">
           <span v-if="!share" class="font-semibold" :class="budgetStatusText(ratio)">
-            {{ row.percent }} %
+            {{ $t('common.percent', { n: row.percent }) }}
           </span>
-          <template v-else>{{ row.percent }} %</template>
+          <template v-else>{{ $t('common.percent', { n: row.percent }) }}</template>
           ·
         </template>
-        {{ row.count }} transaction{{ row.count > 1 ? 's' : '' }}
+        {{ $t('common.transactionCount', row.count) }}
       </span>
       <span v-if="share" class="block h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
         <span class="block h-full rounded-full" :style="{ width: `${Math.min(100, row.percent ?? 0)}%`, backgroundColor: row.color }" />
@@ -57,7 +57,7 @@ const bar = computed(() => budgetStatusColor(ratio.value))
     <span class="flex flex-none flex-col items-end">
       <span class="text-[15px] font-bold tabular-nums">{{ formatCents(row.cents, row.currency) }}</span>
       <span v-if="row.targetCents" class="text-[13px] text-slate-500 tabular-nums">
-        sur {{ formatCents(row.targetCents, row.currency) }}
+        {{ $t('budget.of', { amount: formatCents(row.targetCents, row.currency) }) }}
       </span>
     </span>
     <ChevronRight v-if="row.to" class="size-5 flex-none text-slate-400" aria-hidden="true" />

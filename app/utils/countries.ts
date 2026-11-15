@@ -16,15 +16,17 @@ function flag(code: string) {
   return String.fromCodePoint(...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 }
 
+/** Countries in the current locale, sorted by name. */
 export function bankCountries(): Country[] {
-  const names = new Intl.DisplayNames(['fr'], { type: 'region' })
+  const locale = appLocale()
+  const names = new Intl.DisplayNames([locale], { type: 'region' })
   const list = GOCARDLESS_COUNTRIES.map((code) => ({ code, name: names.of(code) ?? code, flag: flag(code) })).sort(
-    (a, b) => a.name.localeCompare(b.name, 'fr'),
+    (a, b) => a.name.localeCompare(b.name, locale),
   )
   // France first, sandbox last.
   const fr = list.findIndex((c) => c.code === 'FR')
   if (fr > 0) list.unshift(...list.splice(fr, 1))
-  return [...list, { code: SANDBOX_COUNTRY, name: 'Test (bac à sable)', flag: '🧪' }]
+  return [...list, { code: SANDBOX_COUNTRY, name: i18nT('countries.sandbox'), flag: '🧪' }]
 }
 
 export function countryName(code: string): string {

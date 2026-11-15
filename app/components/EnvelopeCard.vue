@@ -20,11 +20,17 @@ const progress = computed(() => (target.value > 0 ? Math.min(100, Math.max(0, Ma
 
 const color = computed(() => envelopeColor(props.iri))
 
-const targetMonth = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+const { t } = useI18n()
 const goal = computed(() => {
   if (!target.value) return null
-  const date = props.envelope.targetDate ? targetMonth.format(new Date(`${props.envelope.targetDate.slice(0, 10)}T12:00:00Z`)) : null
-  return [`Objectif ${formatCentsShort(target.value, props.currency)}`, date].filter(Boolean).join(' · ')
+  const targetMonth = localeFormatter(
+    'month-short-year',
+    (l) => new Intl.DateTimeFormat(l, { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+  )
+  const date = props.envelope.targetDate
+    ? targetMonth.format(new Date(`${props.envelope.targetDate.slice(0, 10)}T12:00:00Z`))
+    : null
+  return [t('envelope.goal', { amount: formatCentsShort(target.value, props.currency) }), date].filter(Boolean).join(' · ')
 })
 </script>
 
@@ -51,7 +57,7 @@ const goal = computed(() => {
           class="text-xs font-semibold tabular-nums"
           :class="change > 0 ? 'text-emerald-700' : 'text-rose-700'"
         >
-          {{ formatSignedCents(change, currency) }} ce mois
+          {{ $t('envelope.thisMonth', { amount: formatSignedCents(change, currency) }) }}
         </span>
       </span>
     </span>
@@ -63,11 +69,11 @@ const goal = computed(() => {
         :aria-valuenow="progress"
         aria-valuemin="0"
         aria-valuemax="100"
-        :aria-label="`${name} : ${progress} % de l'objectif`"
+        :aria-label="$t('envelope.progress', { name, n: progress })"
       >
         <span class="block h-full rounded-full" :class="color.bar" :style="{ width: `${progress}%` }" />
       </span>
-      <span class="w-10 flex-none text-right text-xs font-medium text-slate-600 tabular-nums">{{ progress }} %</span>
+      <span class="w-10 flex-none text-right text-xs font-medium text-slate-600 tabular-nums">{{ $t('common.percent', { n: progress }) }}</span>
     </span>
   </component>
 </template>

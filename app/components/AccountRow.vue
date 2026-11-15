@@ -8,7 +8,7 @@ const props = defineProps<{
   muted?: boolean
   /** Align with the bank name inside a ConnectionCard (logo column). */
   indent?: boolean
-  /** Extra info after the IBAN, e.g. "Connexion supprimée". */
+  /** Extra info after the IBAN, e.g. "Connection deleted". */
   note?: string
 }>()
 
@@ -35,8 +35,8 @@ const balance = computed(() =>
       <span class="flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
         {{ maskIban(account.iban) }}
         <span v-if="note">· {{ note }}</span>
-        <span v-if="syncing" class="font-medium text-indigo-700">· Synchro…</span>
-        <span v-else-if="account.synchronizedStatus === 'FAILED'" class="font-medium text-rose-700">· Échec synchro</span>
+        <span v-if="syncing" class="font-medium text-indigo-700">· {{ $t('accounts.syncing') }}</span>
+        <span v-else-if="account.synchronizedStatus === 'FAILED'" class="font-medium text-rose-700">· {{ $t('accounts.syncFailed') }}</span>
       </span>
     </span>
     <span v-if="balance" class="text-[15px] font-semibold tabular-nums" :class="muted ? 'text-slate-500' : 'text-slate-900'">

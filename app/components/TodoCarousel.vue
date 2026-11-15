@@ -33,7 +33,7 @@ watch(
 <template>
   <section v-if="actions?.length" class="flex flex-col gap-3" aria-labelledby="todo-title">
     <h2 id="todo-title" class="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">
-      À faire
+      {{ $t('todo.title') }}
       <span class="rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] text-white tabular-nums">{{ actions.length }}</span>
     </h2>
 
@@ -48,8 +48,8 @@ watch(
         class="flex-none snap-start"
         :class="actions.length > 1 ? 'w-[85%]' : 'w-full'"
         role="group"
-        aria-roledescription="carte"
-        :aria-label="`${index + 1} sur ${actions.length}`"
+        :aria-roledescription="$t('todo.card')"
+        :aria-label="$t('todo.position', { index: index + 1, total: actions.length })"
       >
         <TodoCard :action="action" />
       </div>
@@ -61,7 +61,7 @@ watch(
         :key="action.id"
         type="button"
         class="flex h-4 items-center"
-        :aria-label="`Action ${index + 1}`"
+        :aria-label="$t('todo.dot', { n: index + 1 })"
         :aria-current="index === active ? 'true' : undefined"
         @click="goTo(index)"
       >
