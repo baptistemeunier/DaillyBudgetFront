@@ -4,6 +4,7 @@ const route = useRoute()
 
 <template>
   <div class="mx-auto min-h-dvh max-w-md font-sans">
+    <NuxtPwaAssets />
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <BottomNav v-if="route.meta.tabs" />

@@ -9,7 +9,41 @@ export default defineNuxtConfig({
   // Nitro still runs server/ (API proxy + token exchange).
   ssr: false,
 
-  modules: ['@nuxt/fonts', '@nuxtjs/i18n'],
+  modules: ['@nuxt/fonts', '@nuxtjs/i18n', '@vite-pwa/nuxt'],
+
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'alternate icon', href: '/favicon.ico', sizes: '32x32' },
+      ],
+    },
+  },
+
+  // Installable from Chrome. Icons come from pwa-assets.config.ts. Only the app shell is cached:
+  // /api/** (bank data, OAuth) always goes to the network.
+  pwa: {
+    registerType: 'autoUpdate',
+    pwaAssets: { config: true },
+    manifest: {
+      name: 'Daily Budget',
+      short_name: 'Daily Budget',
+      lang: 'fr',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      theme_color: '#4f46e5',
+      background_color: '#f8fafc',
+    },
+    generateSW: {
+      navigateFallback: '/',
+      navigateFallbackDenylist: [/^\/api\//],
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+    },
+    // Off in dev: a service worker in front of the Vite dev server breaks module loading
+    // (/_nuxt/*.ts fails once the page comes from the worker). Test install on a production build.
+    devOptions: { enabled: false },
+  },
 
   fonts: {
     families: [{ name: 'Inter', weights: [400, 500, 600, 700] }],
@@ -36,6 +70,8 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    // Dev server reached through the reverse proxy (budget-test.meunier.ovh, …).
+    server: { allowedHosts: ['.meunier.ovh'] },
   },
 
   runtimeConfig: {
