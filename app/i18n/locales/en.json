@@ -230,6 +230,8 @@
       "transfer": "Transfer"
     },
     "removeCategory": "Remove the category",
+    "remember": "Always for “{merchant}”",
+    "rememberHint": "Also categorizes the similar transactions",
     "removeLine": "Remove line",
     "addLine": "Add a line",
     "over": "Over by {amount}",
@@ -334,7 +336,8 @@
     "bankConnections": "Bank connections",
     "manualAccounts": "Manual accounts",
     "addManualAccount": "Add a manual account",
-    "customCategories": "Categories and envelopes"
+    "customCategories": "Categories and envelopes",
+    "rules": "Categorization rules"
   },
   "categorySettings": {
     "title": "Categories and envelopes",
@@ -374,5 +377,30 @@
     "balanceDate": "Balance as of",
     "history": "History",
     "create": "Create account"
+  },
+  "rules": {
+    "title": "Categorization rules",
+    "intro": "Transactions whose merchant contains these words are categorized automatically, at each sync.",
+    "empty": "No rule yet. Create one here, or turn on “Always for …” while categorizing a transaction.",
+    "add": "Add a rule",
+    "new": "New rule",
+    "edit": "Edit the rule",
+    "editNamed": "Edit the rule {name}",
+    "deleteNamed": "Delete the rule {name}",
+    "backToRule": "Back to the rule",
+    "patternLabel": "The merchant contains",
+    "patternPlaceholder": "E.g. CARREFOUR",
+    "patternHint": "Whole words, ignoring case, accents and digits.",
+    "patternRequired": "Enter at least one word.",
+    "directionLabel": "Applies to",
+    "direction": {
+      "debit": "Debits",
+      "credit": "Credits",
+      "both": "Both"
+    },
+    "applyHint": "The matching existing transactions will be categorized too, except the ones you categorized by hand.",
+    "duplicate": "A rule already exists for these words and direction: edit it instead.",
+    "deleteTitle": "Delete the rule {name}?",
+    "deleteText": "The transactions already categorized by this rule keep their category."
   }
 }

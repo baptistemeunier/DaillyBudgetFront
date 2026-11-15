@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, Category, EnvelopeInput, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, CategorizationRule, CategorizationRuleInput, Category, EnvelopeInput, HalCollection, Transaction, UserAction } from '~/types/api'
 import type { AccountScope } from '~/utils/accounts'
 
 export function useConnectionsQuery() {
@@ -258,18 +258,34 @@ export interface SplitInput {
   counterpartAmount?: string
 }
 
-/** Replaces the splits of a transaction and patches it in every cached transaction list. */
+/**
+ * Replaces the splits of a transaction and patches it in every cached transaction list.
+ * With rememberCategory, the API also saves the rule "merchant → category" and categorizes the similar
+ * transactions in the background: the transaction lists are refetched now and once more a bit later.
+ */
 export function useUpdateSplits() {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ transaction, splits }: { transaction: Transaction; splits: SplitInput[] }) =>
+    mutationFn: ({
+      transaction,
+      splits,
+      rememberCategory = false,
+    }: {
+      transaction: Transaction
+      splits: SplitInput[]
+      rememberCategory?: boolean
+    }) =>
       api<Transaction>(transaction._links.self.href, {
         method: 'PATCH',
-        body: { splits },
+        body: rememberCategory ? { splits, rememberCategory } : { splits },
         headers: { 'Content-Type': 'application/merge-patch+json' },
       }),
-    onSuccess: (updated, { transaction, splits }) => {
+    onSuccess: (updated, { transaction, splits, rememberCategory }) => {
+      if (rememberCategory) {
+        queryClient.invalidateQueries({ queryKey: ['categorization_rules'] })
+        refreshAfterRule(queryClient)
+      }
       queryClient.invalidateQueries({ queryKey: ['user_actions'] })
       queryClient.invalidateQueries({ queryKey: ['statement'] })
       queryClient.invalidateQueries({ queryKey: ['savings'] })
@@ -352,5 +368,56 @@ export function useUpdateCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['savings'] })
     },
+  })
+}
+
+/** The user's categorization rules ("always categorize like this"), sorted by pattern. */
+export function useCategorizationRulesQuery() {
+  const api = useApi()
+  return useQuery({
+    queryKey: ['categorization_rules'],
+    queryFn: () => fetchAllPages<CategorizationRule>(api, '/categorization_rules'),
+  })
+}
+
+/**
+ * The API categorizes the matching transactions in the background after a rule is saved:
+ * the lists are refetched now and once more a bit later.
+ */
+function refreshAfterRule(queryClient: ReturnType<typeof useQueryClient>) {
+  const refresh = () => {
+    for (const key of ['transactions', 'user_actions', 'statement']) queryClient.invalidateQueries({ queryKey: [key] })
+  }
+  refresh()
+  setTimeout(refresh, 3000)
+}
+
+/** Creates a rule (iri null) or updates one. */
+export function useSaveCategorizationRule() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ iri, rule }: { iri: string | null; rule: CategorizationRuleInput }) =>
+      iri
+        ? api<CategorizationRule>(iri, {
+            method: 'PATCH',
+            body: rule,
+            headers: { 'Content-Type': 'application/merge-patch+json' },
+          })
+        : api<CategorizationRule>('/categorization_rules', { method: 'POST', body: rule }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categorization_rules'] })
+      refreshAfterRule(queryClient)
+    },
+  })
+}
+
+/** Deletes a rule: the transactions it already categorized keep their category. */
+export function useDeleteCategorizationRule() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (iri: string) => api(iri, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categorization_rules'] }),
   })
 }

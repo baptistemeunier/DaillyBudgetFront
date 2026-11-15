@@ -230,6 +230,8 @@
       "transfer": "Transfert"
     },
     "removeCategory": "Retirer la catégorie",
+    "remember": "Toujours pour « {merchant} »",
+    "rememberHint": "Classe aussi les transactions similaires",
     "removeLine": "Supprimer la ligne",
     "addLine": "Ajouter une ligne",
     "over": "Dépasse de {amount}",
@@ -334,7 +336,8 @@
     "bankConnections": "Connexions bancaires",
     "manualAccounts": "Comptes manuels",
     "addManualAccount": "Ajouter un compte manuel",
-    "customCategories": "Catégories et enveloppes"
+    "customCategories": "Catégories et enveloppes",
+    "rules": "Règles de catégorisation"
   },
   "categorySettings": {
     "title": "Catégories et enveloppes",
@@ -374,5 +377,30 @@
     "balanceDate": "Solde à la date du",
     "history": "Historique",
     "create": "Créer le compte"
+  },
+  "rules": {
+    "title": "Règles de catégorisation",
+    "intro": "Les transactions dont le marchand contient ces mots sont catégorisées automatiquement, à chaque synchronisation.",
+    "empty": "Aucune règle pour l'instant. Crée-en une ici, ou active « Toujours pour … » en catégorisant une transaction.",
+    "add": "Ajouter une règle",
+    "new": "Nouvelle règle",
+    "edit": "Modifier la règle",
+    "editNamed": "Modifier la règle {name}",
+    "deleteNamed": "Supprimer la règle {name}",
+    "backToRule": "Retour à la règle",
+    "patternLabel": "Le marchand contient",
+    "patternPlaceholder": "Ex. : CARREFOUR",
+    "patternHint": "Mots entiers, sans tenir compte des majuscules, accents et chiffres.",
+    "patternRequired": "Saisissez au moins un mot.",
+    "directionLabel": "S'applique aux",
+    "direction": {
+      "debit": "Débits",
+      "credit": "Crédits",
+      "both": "Les deux"
+    },
+    "applyHint": "Les transactions existantes correspondantes seront aussi catégorisées, sauf celles que tu as catégorisées à la main.",
+    "duplicate": "Une règle existe déjà pour ces mots et ce sens : modifie-la plutôt.",
+    "deleteTitle": "Supprimer la règle {name} ?",
+    "deleteText": "Les transactions déjà catégorisées par cette règle gardent leur catégorie."
   }
 }

@@ -63,6 +63,8 @@ export interface Transaction extends HalResource {
   reference: string
   description: string
   detail: string | null
+  /** Normalized merchant (from the description) used by the categorization rules; null without words. */
+  merchantKey?: string | null
   amount: string // decimal string, e.g. "-23.48"
   currency: string
   bookingAt: string | null
@@ -84,6 +86,28 @@ export interface TransactionSplit {
 }
 
 export type CategoryType = 'expense' | 'income' | 'transfer' | 'saving'
+
+export type TransactionDirection = 'debit' | 'credit'
+
+/**
+ * "Always categorize like this": the transactions whose merchant key contains the pattern (whole words),
+ * in the direction if given (null: both), get a single split on the category.
+ */
+export interface CategorizationRule extends HalResource {
+  /** Normalized by the API (uppercase words, no accent, no digit): "Carrefour" → "CARREFOUR". */
+  pattern: string
+  direction: TransactionDirection | null
+  /** IRI, or only in _links depending on the HAL rendering — see ruleCategoryIri(). */
+  category?: string | null
+  createdAt?: string
+  _links: HalResource['_links'] & { category?: HalLink }
+}
+
+export interface CategorizationRuleInput {
+  pattern: string
+  direction: TransactionDirection | null
+  category: string
+}
 
 export interface Category extends HalResource {
   code: string | null

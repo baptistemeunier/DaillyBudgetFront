@@ -4,6 +4,7 @@
 // a partial split is allowed — the remainder stays uncategorized. Both take expense / income only.
 // Transfert: to / from another account (transfer or saving categories, see TransferCategorize).
 // Bulk (`transactions`): simple mode only, the picked category is applied to each one.
+// "Toujours pour <merchant>" switch (simple mode): also saves the rule merchant → category (rememberCategory).
 import { ChevronLeft, Plus, Trash2, X } from 'lucide-vue-next'
 import type { SplitInput } from '~/composables/useBankingQueries'
 import type { CategoryType, Transaction } from '~/types/api'
@@ -26,8 +27,8 @@ const update = useUpdateSplits()
 
 // Type of the transaction's account: savings / investment accounts also take saving categories.
 const { data: accounts } = useAllAccountsQuery()
-const accountTypeOf = (tr: Transaction) =>
-  accounts.value?.find((a) => a._links.self.href === tr._links.account?.href)?.type ?? null
+const accountOf = (tr: Transaction) => accounts.value?.find((a) => a._links.self.href === tr._links.account?.href)
+const accountTypeOf = (tr: Transaction) => accountOf(tr)?.type ?? null
 
 interface Line {
   key: number
@@ -44,6 +45,10 @@ let nextKey = 0
 const t = computed(() => props.transaction ?? null)
 const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
 const bulkPending = ref(false)
+const remember = ref(false)
+
+// The API only remembers a merchant of a bank account (manual accounts have no rule).
+const canRemember = computed(() => !!t.value?.merchantKey && accountOf(t.value)?.manual === false)
 
 // Category types allowed for every transaction (debits + credits, or savings + checking accounts mixed -> none).
 const bulkTypes = computed<CategoryType[]>(() =>
@@ -105,6 +110,7 @@ const canSave = computed(
 watch([t, bulk], ([transaction, items]) => {
   error.value = null
   picking.value = null
+  remember.value = false
   if (!transaction && !items) {
     dialog.value?.close()
     return
@@ -163,11 +169,11 @@ function errorMessage(e: unknown): string {
   return apiErrorMessage(e)
 }
 
-async function save(splits: SplitInput[]) {
+async function save(splits: SplitInput[], rememberCategory = false) {
   if (!t.value) return
   error.value = null
   try {
-    await update.mutateAsync({ transaction: t.value, splits })
+    await update.mutateAsync({ transaction: t.value, splits, rememberCategory })
     emit('saved', [t.value._links.self.href])
     emit('close')
   } catch (e) {
@@ -176,7 +182,9 @@ async function save(splits: SplitInput[]) {
 }
 
 function pickSimple(iri: string) {
-  save([{ category: iri, amount: t.value!.amount }])
+  // A saving category can't be remembered (its mirror needs a manual account): saved without the rule.
+  const rememberCategory = remember.value && canRemember.value && tree.value?.byIri.get(iri)?.type !== 'saving'
+  save([{ category: iri, amount: t.value!.amount }], rememberCategory)
 }
 
 async function pickBulk(iri: string) {
@@ -368,6 +376,30 @@ function onBackdropClick(event: MouseEvent) {
 
         <!-- Simple -->
         <template v-else-if="mode === 'simple'">
+          <button
+            v-if="canRemember"
+            type="button"
+            role="switch"
+            :aria-checked="remember"
+            class="mb-3 flex min-h-14 w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-colors"
+            :class="remember ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 hover:bg-slate-50'"
+            @click="remember = !remember"
+          >
+            <span class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate text-[15px] font-medium">{{ $t('categorize.remember', { merchant: t.merchantKey }) }}</span>
+              <span class="text-[13px] text-slate-500">{{ $t('categorize.rememberHint') }}</span>
+            </span>
+            <span
+              class="relative h-6 w-10 flex-none rounded-full transition-colors"
+              :class="remember ? 'bg-indigo-600' : 'bg-slate-300'"
+              aria-hidden="true"
+            >
+              <span
+                class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform"
+                :class="remember ? 'translate-x-4' : ''"
+              />
+            </span>
+          </button>
           <CategoryPicker
             :tree="tree"
             :types="types"

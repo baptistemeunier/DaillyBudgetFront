@@ -3,7 +3,7 @@
 import { CATEGORY_ORDER, categoryLabel } from '~/i18n/categories'
 import type { AppLocale } from '~/utils/i18n'
 import type { Component } from 'vue'
-import type { AccountType, Category, CategoryType, StatementDetail, Transaction, TransactionSplit } from '~/types/api'
+import type { AccountType, CategorizationRule, Category, CategoryType, StatementDetail, Transaction, TransactionDirection, TransactionSplit } from '~/types/api'
 
 /**
  * Simple / split categorization: income for a credit, expenses for a debit; on a savings / investment
@@ -96,6 +96,18 @@ export function buildCategoryTree(categories: Category[], locale: AppLocale = 'f
 export function splitCategoryIri(split: TransactionSplit): string | null {
   if (typeof split.category === 'string') return split.category
   return split.category?._links?.self?.href ?? split._links?.category?.href ?? null
+}
+
+/** Category IRI of a categorization rule, whatever the HAL rendering. */
+export function ruleCategoryIri(rule: CategorizationRule): string | null {
+  return (typeof rule.category === 'string' ? rule.category : null) ?? rule._links.category?.href ?? null
+}
+
+/** Category types a rule can use in a direction (null: both); never saving (its mirror needs a manual account). */
+export function ruleTypes(direction: TransactionDirection | null): CategoryType[] {
+  if (direction === 'debit') return ['expense', 'transfer']
+  if (direction === 'credit') return ['income', 'transfer']
+  return ['expense', 'income', 'transfer']
 }
 
 /** IRIs of a statement detail, whatever the HAL rendering. */
