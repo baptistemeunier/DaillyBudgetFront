@@ -433,9 +433,29 @@
     "unread": "Non lue",
     "deleteNamed": "Supprimer la notification « {name} »",
     "bellUnread": "Notifications, {n} non lue | Notifications, {n} non lue | Notifications, {n} non lues",
-    "monthClosing": {
-      "title": "Clôture du budget de {month}",
-      "text": "Plus aucune transaction à catégoriser. | Encore {n} transaction à catégoriser avant la fin du mois. | Encore {n} transactions à catégoriser avant la fin du mois."
+    "fallback": "Nouvelle notification",
+    "types": {
+      "CONNECTION_EXPIRING": {
+        "title": "Accès {bank} bientôt expiré",
+        "titleGeneric": "Accès bancaire bientôt expiré",
+        "body": "Expire {when}. Renouvelle-le pour garder tes comptes à jour.",
+        "bodyNoDate": "Renouvelle-le bientôt pour garder tes comptes à jour."
+      },
+      "CONNECTION_EXPIRED": {
+        "title": "Accès {bank} expiré",
+        "titleGeneric": "Accès bancaire expiré",
+        "body": "Soldes figés depuis le {date} : reconnecte ta banque.",
+        "bodyNoDate": "Tes soldes ne sont plus mis à jour : reconnecte ta banque."
+      },
+      "CONNECTION_TO_CONFIGURE": {
+        "title": "Connexion {bank} à finaliser",
+        "titleGeneric": "Connexion bancaire à finaliser",
+        "body": "Termine l'autorisation auprès de ta banque."
+      },
+      "MONTH_CLOSING": {
+        "title": "Clôture du budget de {month}",
+        "body": "Plus aucune transaction à catégoriser. | Encore {n} transaction à catégoriser avant la fin du mois. | Encore {n} transactions à catégoriser avant la fin du mois."
+      }
     }
   },
   "notificationSettings": {
@@ -463,5 +483,24 @@
         "hint": "5 jours avant la fin du mois, s'il reste des transactions à catégoriser."
       }
     }
+  },
+  "pushDevice": {
+    "title": "Cet appareil",
+    "enable": "Notifications sur cet appareil",
+    "onHint": "Activées : tu reçois les notifications choisies ci-dessous.",
+    "offHint": "Désactivées : tout reste visible depuis la cloche de l'accueil.",
+    "unsupported": "Ce navigateur ne peut pas recevoir de notifications.",
+    "needsInstall": "Installe l'app sur l'écran d'accueil (Partager → Sur l'écran d'accueil) pour recevoir les notifications.",
+    "denied": "Les notifications sont bloquées pour cette app : autorise-les dans les réglages du navigateur.",
+    "devices": "Appareils abonnés",
+    "thisDevice": "Cet appareil",
+    "since": "depuis le {date}",
+    "unknownDevice": "Appareil inconnu",
+    "remove": "Retirer l'appareil {name}"
+  },
+  "pushPrompt": {
+    "text": "Être prévenu avant que l'accès à ta banque expire, et quand le mois se termine ?",
+    "enable": "Activer",
+    "later": "Plus tard"
   }
 }

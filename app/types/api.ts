@@ -161,6 +161,8 @@ export interface AppNotification extends HalResource {
     month?: string
     /** CONNECTION_*: end of the bank access. */
     expiresAt?: string
+    /** CONNECTION_*: bank name, written by the API (the service worker can't fetch it). */
+    bankName?: string
   } | null
   read: boolean
   readAt: string | null
@@ -180,6 +182,16 @@ export interface NotificationSettings extends HalResource {
   push: Partial<Record<NotificationType, boolean>>
   largeTransactionThreshold?: string | null
   hideAmounts?: boolean
+}
+
+/** A device subscribed to Web Push (GET /push_subscriptions); its id is the uuid v5 of `endpoint`. */
+export interface PushSubscriptionResource extends HalResource {
+  endpoint: string
+  locale: string
+  /** Set by the API from the request: "Chrome · Android" in the devices list. */
+  userAgent: string | null
+  createdAt: string
+  lastSuccessAt: string | null
 }
 
 export type UserActionType =

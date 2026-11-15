@@ -95,6 +95,8 @@ const setOpen = (id: string, value: boolean) => {
       </template>
     </PageHeader>
 
+    <PushPromptCard />
+
     <TodoCarousel />
 
     <section class="flex flex-col gap-3" aria-labelledby="banks-title">

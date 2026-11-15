@@ -2,6 +2,7 @@
 // Notification settings: push on / off per type. A notification always shows in the inbox;
 // the switch only decides whether it is also pushed to the phone.
 // Saved at each switch (POST on the first change, PATCH after); the full push map is sent each time.
+// On top: Web Push on this device and the subscribed devices (PushDeviceSection).
 import type { NotificationType } from '~/types/api'
 
 const { t } = useI18n()
@@ -33,6 +34,8 @@ async function toggle(type: NotificationType) {
     <PageHeader :title="$t('notificationSettings.title')" back="/profile" />
 
     <p class="text-sm text-slate-600">{{ $t('notificationSettings.intro') }}</p>
+
+    <PushDeviceSection />
 
     <p v-if="isPending" class="py-8 text-center text-sm text-slate-500">{{ $t('common.loading') }}</p>
     <div v-else-if="isError" class="flex flex-col items-center gap-3 py-8">

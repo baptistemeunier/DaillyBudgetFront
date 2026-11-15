@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
@@ -22,8 +23,13 @@ export default defineNuxtConfig({
 
   // Installable from Chrome. Icons come from pwa-assets.config.ts. Only the app shell is cached:
   // /api/** (bank data, OAuth) always goes to the network.
+  // buildSW (vite-pwa v2): our own TypeScript service worker (service-worker/sw.ts), bundled to sw.js,
+  // precaches the shell and handles Web Push.
   pwa: {
-    registerType: 'autoUpdate',
+    strategies: 'buildSW',
+    // 'prompt': no automatic reload when a new worker is ready — it could cut the OAuth code exchange.
+    // app/plugins/pwa-update.client.ts applies the update outside the auth / bank callbacks.
+    registerType: 'prompt',
     pwaAssets: { config: true },
     manifest: {
       name: 'Daily Budget',
@@ -35,9 +41,11 @@ export default defineNuxtConfig({
       theme_color: '#4f46e5',
       background_color: '#f8fafc',
     },
-    generateSW: {
-      navigateFallback: '/',
-      navigateFallbackDenylist: [/^\/api\//],
+    // The navigation fallback ('/', except /api/) is in sw.ts. '/' must be precached for it, but this SPA has
+    // no index.html in .output/public (Nitro serves the shell): added by hand, with a new revision per build.
+    additionalManifestEntries: [{ url: '/', revision: String(Date.now()) }],
+    buildSW: {
+      swSrc: fileURLToPath(new URL('./service-worker/sw.ts', import.meta.url)),
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
     },
     // Off in dev: a service worker in front of the Vite dev server breaks module loading
@@ -83,6 +91,8 @@ export default defineNuxtConfig({
     public: {
       // Overridden by NUXT_PUBLIC_*
       oauthClientId: '',
+      // Web Push: public VAPID key of the API (not a secret), base64url — NUXT_PUBLIC_VAPID_PUBLIC_KEY
+      vapidPublicKey: '',
       oauthAuthorizeUrl: 'https://auth.meunier.ovh/oauth/authorize',
       oauthScope: 'account_connection:write account:write category:write budget:write',
       apiMocking: false,

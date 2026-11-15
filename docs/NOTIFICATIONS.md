@@ -71,7 +71,7 @@ Prévenir l'utilisateur quand quelque chose demande son attention ou mérite d'�
 
 Il y a quatre colonnes nullable, avec au plus une renseignée (contrôlé par un validateur).
 
-**Pourquoi le texte n'est pas stocké :** le front le compose à partir de `type` et `data`, avec l'i18n qui existe déjà. Seul le push, qui est affiché par le service worker sans le front, a besoin d'un texte rédigé côté serveur (voir [Langue](#langue)).
+**Pourquoi le texte n'est pas stocké :** le front le compose à partir de `type` et `data`, avec l'i18n qui existe déjà. Le push aussi : le service worker est du code front (voir [Langue](#langue)).
 
 ### `PushSubscription`
 
@@ -169,15 +169,22 @@ Avec 1 à 3 syncs par jour, un utilisateur ne doit pas recevoir un push à chacu
 
 ### Langue
 
-Le push est affiché par le service worker, donc le serveur doit en rédiger le texte. Les traductions vont dans `translations/notifications.{fr,en}.yaml` (Symfony Translation), et chaque abonnement est rédigé dans sa `locale`. Pour garder la cohérence avec le front, les clés reprennent la même arborescence (`notifications.MONTH_CLOSING.title`).
+**Le texte est rédigé par le front, l'API n'envoie que des données.** Le service worker est du code front : il embarque la partie `notifications` des fichiers de langue (`app/i18n/locales/{fr,en}.json`) et la même fonction que la boîte de notifications, `app/utils/notificationText.ts` (clés `notifications.types.<TYPE>.*`). Le texte est donc écrit à un seul endroit. L'API n'a ni `symfony/translation` ni fichiers de traduction, et les dates sont mises en forme par `Intl` dans le navigateur, dans la `locale` de l'abonnement.
+
+**Ce que ça impose :**
+- **Tout ce que le texte affiche doit être dans `data`**, puisque le service worker n'a pas de token pour appeler l'API. Par exemple `bankName` pour les notifications `CONNECTION_*`, écrit par l'API à la création. La boîte de notifications s'en sert aussi.
+- **Texte de repli** : un téléphone peut recevoir un nouveau type avant d'avoir mis à jour son service worker. Un type inconnu affiche « Nouvelle notification » et ouvre `/notifications`.
+- **Safari et le Web Push déclaratif** (iOS 18.4+), qui affiche un push sans exécuter le service worker, demanderait un titre déjà rédigé. Ce n'est pas utilisé ici.
 
 ### Contenu du push
 
 ```json
-{ "title": "Plus que 5 jours pour clôturer novembre", "body": "8 transactions à catégoriser", "url": "/transactions/to-categorize", "tag": "MONTH_CLOSING:2026-11", "notification": "/notifications/0193…" }
+{ "type": "MONTH_CLOSING", "data": { "month": "2026-11", "count": 8 }, "locale": "fr", "hideAmounts": false, "url": "/transactions/to-categorize?accounts=checking", "tag": "MONTH_CLOSING_0193…_2026-11", "notification": "/notifications/0193…" }
 ```
 
-Le contenu est chiffré de bout en bout par Web Push, mais il s'affiche sur l'écran verrouillé. Avec `hideAmounts: true`, les montants ne figurent ni dans `title` ni dans `body`.
+Le service worker en tire « Clôture du budget de novembre · Encore 8 transactions à catégoriser avant la fin du mois. ». `url` est l'écran ouvert au clic, `notification` l'IRI marquée comme lue à l'ouverture (`?notification={id}`).
+
+Le contenu est chiffré de bout en bout par Web Push, mais il s'affiche sur l'écran verrouillé. Avec `hideAmounts: true`, le texte ne contient aucun montant.
 
 ## API
 

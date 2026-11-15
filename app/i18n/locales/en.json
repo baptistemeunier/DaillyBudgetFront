@@ -433,9 +433,29 @@
     "unread": "Unread",
     "deleteNamed": "Delete the notification “{name}”",
     "bellUnread": "Notifications, {n} unread | Notifications, {n} unread | Notifications, {n} unread",
-    "monthClosing": {
-      "title": "Closing the {month} budget",
-      "text": "No transaction left to categorize. | {n} transaction left to categorize before the end of the month. | {n} transactions left to categorize before the end of the month."
+    "fallback": "New notification",
+    "types": {
+      "CONNECTION_EXPIRING": {
+        "title": "{bank} access expiring soon",
+        "titleGeneric": "Bank access expiring soon",
+        "body": "Expires {when}. Renew it to keep your accounts up to date.",
+        "bodyNoDate": "Renew it soon to keep your accounts up to date."
+      },
+      "CONNECTION_EXPIRED": {
+        "title": "{bank} access expired",
+        "titleGeneric": "Bank access expired",
+        "body": "Balances frozen since {date}: reconnect your bank.",
+        "bodyNoDate": "Your balances are no longer updated: reconnect your bank."
+      },
+      "CONNECTION_TO_CONFIGURE": {
+        "title": "{bank} connection to finalize",
+        "titleGeneric": "Bank connection to finalize",
+        "body": "Finish the authorization with your bank."
+      },
+      "MONTH_CLOSING": {
+        "title": "Closing the {month} budget",
+        "body": "No transaction left to categorize. | {n} transaction left to categorize before the end of the month. | {n} transactions left to categorize before the end of the month."
+      }
     }
   },
   "notificationSettings": {
@@ -463,5 +483,24 @@
         "hint": "5 days before the end of the month, if transactions are left to categorize."
       }
     }
+  },
+  "pushDevice": {
+    "title": "This device",
+    "enable": "Notifications on this device",
+    "onHint": "On: you get the notifications chosen below.",
+    "offHint": "Off: everything stays visible from the bell on the home screen.",
+    "unsupported": "This browser cannot receive notifications.",
+    "needsInstall": "Install the app on your home screen (Share → Add to Home Screen) to receive notifications.",
+    "denied": "Notifications are blocked for this app: allow them in the browser settings.",
+    "devices": "Subscribed devices",
+    "thisDevice": "This device",
+    "since": "since {date}",
+    "unknownDevice": "Unknown device",
+    "remove": "Remove the device {name}"
+  },
+  "pushPrompt": {
+    "text": "Get notified before your bank access expires, and when the month ends?",
+    "enable": "Turn on",
+    "later": "Later"
   }
 }

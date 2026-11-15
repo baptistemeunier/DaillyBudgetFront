@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { AppNotification, HalCollection, NotificationSettings, NotificationType } from '~/types/api'
+import type { AppNotification, HalCollection, NotificationSettings, NotificationType, PushSubscriptionResource } from '~/types/api'
 
 /** The API may send types this front doesn't handle yet (later steps): they are not shown. */
 const HANDLED_NOTIFICATIONS: string[] = [
@@ -136,5 +136,24 @@ export function useSaveNotificationSettings() {
           })
         : api<NotificationSettings>('/notification_settings', { method: 'POST', body: changes }),
     onSuccess: (saved) => queryClient.setQueryData(['notification_settings'], saved),
+  })
+}
+
+/** Devices subscribed to Web Push, the most recent first. */
+export function usePushSubscriptionsQuery() {
+  const api = useApi()
+  return useQuery({
+    queryKey: ['push_subscriptions'],
+    queryFn: () => fetchAllPages<PushSubscriptionResource>(api, '/push_subscriptions'),
+  })
+}
+
+/** Removes another device (this one goes through usePushDevice().disable(), which also unsubscribes). */
+export function useDeletePushSubscription() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (subscription: PushSubscriptionResource) => api(subscription._links.self.href, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['push_subscriptions'] }),
   })
 }

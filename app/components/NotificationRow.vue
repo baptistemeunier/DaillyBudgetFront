@@ -1,74 +1,43 @@
 <script setup lang="ts">
-// One notification of the inbox: icon, text built from type + data (front i18n), age, unread dot.
+// One notification of the inbox: icon, text from notificationText() (the same as the push), age, unread dot.
 // A tap marks it read and opens its screen; the cross deletes it.
 import { CalendarClock, Clock, Link, Unplug, X } from 'lucide-vue-next'
 import type { Component } from 'vue'
-import type { AppNotification } from '~/types/api'
+import type { AppNotification, NotificationType } from '~/types/api'
 
 const props = defineProps<{ notification: AppNotification }>()
 const emit = defineEmits<{ open: [to: string]; delete: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-// Bank of the connection, from the (already cached) connection list.
+// Connection link; bank name from data (written by the API), else from the cached connection list.
 const connectionHref = computed(
   () => props.notification._links.accountConnection?.href ?? props.notification._links['account-connection']?.href,
 )
 const { data: connections } = useConnectionsQuery()
 const connection = computed(() => connections.value?.find((c) => c._links.self.href === connectionHref.value))
-const { data: bank } = useBankQuery(() => connection.value?._links.bank?.href)
-const withBank = (key: string) => (bank.value?.name ? t(key, { bank: bank.value.name }) : t(`${key}Generic`))
+const { data: bank } = useBankQuery(() => (props.notification.data?.bankName ? null : connection.value?._links.bank?.href))
 const connectionPage = computed(() =>
   connectionHref.value ? `/profile/connections/${iriId(connectionHref.value)}` : '/profile/connections',
 )
 
-interface RowView {
-  icon: Component
-  tint: string
-  title: string
-  text: string
-  to: string
+// Screen opened by a tap, and icon / tint, per type. The text comes from notificationText() (shared with the push).
+const LOOK: Record<NotificationType, { icon: Component; tint: string }> = {
+  CONNECTION_EXPIRING: { icon: Clock, tint: 'bg-amber-100 text-amber-700' },
+  CONNECTION_EXPIRED: { icon: Unplug, tint: 'bg-rose-100 text-rose-700' },
+  CONNECTION_TO_CONFIGURE: { icon: Link, tint: 'bg-amber-100 text-amber-700' },
+  MONTH_CLOSING: { icon: CalendarClock, tint: 'bg-indigo-100 text-indigo-700' },
 }
 
-const view = computed<RowView>(() => {
+const view = computed(() => {
   const n = props.notification
-  const data = n.data ?? {}
-  switch (n.type) {
-    case 'CONNECTION_EXPIRING':
-      return {
-        icon: Clock,
-        tint: 'bg-amber-100 text-amber-700',
-        title: withBank('todo.expiring.title'),
-        text: data.expiresAt ? t('todo.expiring.text', { when: relativeTime(data.expiresAt) }) : t('todo.expiring.textNoDate'),
-        to: connectionPage.value,
-      }
-    case 'CONNECTION_EXPIRED':
-      return {
-        icon: Unplug,
-        tint: 'bg-rose-100 text-rose-700',
-        title: withBank('todo.expired.title'),
-        text: data.expiresAt ? t('todo.expired.text', { date: formatDate(data.expiresAt) }) : t('todo.expired.textNoDate'),
-        to: connectionPage.value,
-      }
-    case 'CONNECTION_TO_CONFIGURE':
-      return {
-        icon: Link,
-        tint: 'bg-amber-100 text-amber-700',
-        title: withBank('todo.configure.title'),
-        text: t('todo.configure.text'),
-        to: connectionPage.value,
-      }
-    case 'MONTH_CLOSING': {
-      const month = data.month ?? n.createdAt.slice(0, 7)
-      return {
-        icon: CalendarClock,
-        tint: 'bg-indigo-100 text-indigo-700',
-        title: t('notifications.monthClosing.title', { month: monthName(month) }),
-        text: t('notifications.monthClosing.text', data.count ?? 0),
-        to: '/transactions/to-categorize?accounts=checking',
-      }
-    }
-  }
+  const data = { ...n.data, bankName: n.data?.bankName ?? bank.value?.name }
+  const text = notificationText(n.type, data, n.createdAt, {
+    t: (key, named, plural) => (plural === undefined ? t(key, named ?? {}) : t(key, named ?? {}, plural)),
+    locale: locale.value,
+  }) ?? { title: t('notifications.fallback'), body: '' }
+  const to = n.type === 'MONTH_CLOSING' ? '/transactions/to-categorize?accounts=checking' : connectionPage.value
+  return { ...LOOK[n.type], ...text, to }
 })
 </script>
 
@@ -86,7 +55,7 @@ const view = computed<RowView>(() => {
           <span v-if="!notification.read" class="size-2 flex-none rounded-full bg-indigo-600" aria-hidden="true" />
           <span v-if="!notification.read" class="sr-only">{{ $t('notifications.unread') }}</span>
         </span>
-        <span class="text-sm text-slate-600">{{ view.text }}</span>
+        <span v-if="view.body" class="text-sm text-slate-600">{{ view.body }}</span>
         <span class="text-xs text-slate-400">{{ relativeTime(notification.createdAt) }}</span>
       </span>
     </button>
