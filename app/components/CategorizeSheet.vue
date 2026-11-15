@@ -67,6 +67,12 @@ const absAmount = computed(() => Math.abs(amountCents.value))
 const sign = computed(() => (amountCents.value < 0 ? -1 : 1))
 const currency = computed(() => t.value?.currency ?? 'EUR')
 
+// Bank detail, shown when it adds something to the description.
+const detail = computed(() => {
+  const d = t.value?.detail?.trim()
+  return d && d !== t.value?.description.trim() ? d : null
+})
+
 const currentIris = computed(() =>
   (t.value?.splits ?? []).map(splitCategoryIri).filter((i): i is string => !!i),
 )
@@ -266,7 +272,7 @@ function onBackdropClick(event: MouseEvent) {
           <ChevronLeft class="size-5" />
         </button>
         <div class="flex min-w-0 flex-1 flex-col">
-          <h2 id="categorize-title" class="truncate text-[17px] font-bold">
+          <h2 id="categorize-title" class="text-[17px] font-bold" :class="picking !== null ? 'truncate' : 'break-words'">
             {{ picking !== null ? $t('categorize.chooseCategory') : t.description }}
           </h2>
           <p class="text-[13px] text-slate-500">
@@ -286,6 +292,12 @@ function onBackdropClick(event: MouseEvent) {
           <X class="size-5" />
         </button>
       </header>
+
+      <!-- Bank detail -->
+      <p
+        v-if="picking === null && detail"
+        class="mx-4 mt-3 max-h-32 flex-none overflow-y-auto rounded-2xl bg-slate-50 px-3 py-2.5 text-[13px] break-words whitespace-pre-line text-slate-700"
+      >{{ detail }}</p>
 
       <!-- Mode switch -->
       <div v-if="picking === null" class="flex-none px-4 pt-3">
