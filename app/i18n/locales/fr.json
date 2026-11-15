@@ -333,7 +333,31 @@
     "language": "Langue",
     "bankConnections": "Connexions bancaires",
     "manualAccounts": "Comptes manuels",
-    "addManualAccount": "Ajouter un compte manuel"
+    "addManualAccount": "Ajouter un compte manuel",
+    "customCategories": "Catégories et enveloppes"
+  },
+  "categorySettings": {
+    "title": "Catégories et enveloppes",
+    "tabs": {
+      "categories": "Catégories",
+      "envelopes": "Enveloppes"
+    },
+    "categoriesIntro": "Tes sous-catégories, en plus de celles proposées par l'app.",
+    "categoriesEmpty": "Tu n'as pas encore créé de sous-catégorie. Ajoute-en une sous la catégorie de ton choix.",
+    "envelopesIntro": "Tes enveloppes d'épargne et leurs objectifs.",
+    "envelopesEmpty": "Aucune enveloppe pour l'instant. Crée-en une pour mettre de côté vers un objectif.",
+    "add": "Ajouter une sous-catégorie",
+    "new": "Nouvelle sous-catégorie",
+    "edit": "Modifier la sous-catégorie",
+    "in": "Dans {parent}",
+    "nameLabel": "Nom de la sous-catégorie",
+    "nameRequired": "Donne un nom à la sous-catégorie.",
+    "editNamed": "Modifier {name}",
+    "deleteNamed": "Supprimer {name}",
+    "deleteCategoryTitle": "Supprimer la sous-catégorie « {name} » ?",
+    "deleteCategoryText": "Les transactions classées dans cette sous-catégorie repasseront à catégoriser.",
+    "deleteEnvelopeTitle": "Supprimer l'enveloppe « {name} » ?",
+    "deleteEnvelopeText": "Son objectif est perdu et les versements affectés à cette enveloppe repasseront à catégoriser."
   },
   "manualAccount": {
     "title": "Compte manuel",

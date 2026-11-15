@@ -333,7 +333,31 @@
     "language": "Language",
     "bankConnections": "Bank connections",
     "manualAccounts": "Manual accounts",
-    "addManualAccount": "Add a manual account"
+    "addManualAccount": "Add a manual account",
+    "customCategories": "Categories and envelopes"
+  },
+  "categorySettings": {
+    "title": "Categories and envelopes",
+    "tabs": {
+      "categories": "Categories",
+      "envelopes": "Envelopes"
+    },
+    "categoriesIntro": "Your sub-categories, on top of the ones provided by the app.",
+    "categoriesEmpty": "You haven't created any sub-category yet. Add one under the category of your choice.",
+    "envelopesIntro": "Your saving envelopes and their goals.",
+    "envelopesEmpty": "No envelope yet. Create one to save towards a goal.",
+    "add": "Add a sub-category",
+    "new": "New sub-category",
+    "edit": "Edit sub-category",
+    "in": "In {parent}",
+    "nameLabel": "Sub-category name",
+    "nameRequired": "Give the sub-category a name.",
+    "editNamed": "Edit {name}",
+    "deleteNamed": "Delete {name}",
+    "deleteCategoryTitle": "Delete the sub-category “{name}”?",
+    "deleteCategoryText": "Transactions filed under this sub-category will need to be categorized again.",
+    "deleteEnvelopeTitle": "Delete the envelope “{name}”?",
+    "deleteEnvelopeText": "Its goal is lost and the transfers assigned to this envelope will need to be categorized again."
   },
   "manualAccount": {
     "title": "Manual account",

@@ -49,7 +49,8 @@ export function buildCategoryTree(categories: Category[], locale: AppLocale = 'f
     const iri = c._links.self.href
     byIri.set(iri, {
       iri,
-      code: c.code,
+      // The API omits null fields: user categories come without a code
+      code: c.code ?? null,
       label: c.name ?? (c.code ? categoryLabel(c.code, locale) : undefined) ?? c.code ?? i18nT('categories.unnamed'),
       icon: categoryIcon(c.icon) ?? DEFAULT_CATEGORY_ICON,
       iconName: c.icon ?? null,

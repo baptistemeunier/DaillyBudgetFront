@@ -320,6 +320,23 @@ export function useCreateCategory() {
   })
 }
 
+/**
+ * Deletes a user category (or envelope). The API removes it for good: its splits lose their category,
+ * so the transactions go back to "to categorize".
+ */
+export function useDeleteCategory() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (iri: string) => api(iri, { method: 'DELETE' }),
+    onSuccess: () => {
+      for (const key of ['categories', 'savings', 'statement', 'user_actions', 'transactions']) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
+    },
+  })
+}
+
 /** Renames a user category, or changes the target of an envelope. */
 export function useUpdateCategory() {
   const api = useApi()
