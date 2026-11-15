@@ -455,15 +455,48 @@
       "MONTH_CLOSING": {
         "title": "Closing the {month} budget",
         "body": "No transaction left to categorize. | {n} transaction left to categorize before the end of the month. | {n} transactions left to categorize before the end of the month."
+      },
+      "BALANCE_LOW": {
+        "title": "Low balance on {account}",
+        "body": "{balance}, below your {threshold} threshold.",
+        "bodyHidden": "The balance went below your threshold."
+      },
+      "LARGE_TRANSACTION": {
+        "title": "Large expense: {amount}",
+        "titleHidden": "Large expense",
+        "body": "{description} · {account}",
+        "titleGrouped": "No large expense | {n} large expense | {n} large expenses",
+        "bodyGrouped": "On {account}"
+      },
+      "INCOME_RECEIVED": {
+        "title": "Income received: {amount}",
+        "titleHidden": "Income received",
+        "body": "{description} · {account}",
+        "titleGrouped": "No income received | {n} income received | {n} incomes received",
+        "bodyGrouped": "On {account}"
+      },
+      "BUDGET_ALMOST_EXCEEDED": {
+        "title": "{category}: 80% of the budget reached",
+        "body": "{spent} spent out of {budget} in {month}.",
+        "bodyHidden": "Slow down until the end of {month}."
+      },
+      "BUDGET_EXCEEDED": {
+        "title": "{category}: budget exceeded",
+        "body": "{spent} spent out of {budget} in {month}.",
+        "bodyHidden": "The {month} budget is exceeded for this category."
       }
-    }
+    },
+    "yourAccount": "your account",
+    "aCategory": "A category"
   },
   "notificationSettings": {
     "title": "Notifications",
     "intro": "Choose what is sent to your phone. Every notification stays visible in the Notifications page, from the bell on the home screen.",
     "groups": {
       "connections": "Bank connections",
-      "budget": "Budget"
+      "budget": "Budget",
+      "accounts": "Accounts",
+      "privacy": "Privacy"
     },
     "types": {
       "CONNECTION_EXPIRING": {
@@ -481,8 +514,32 @@
       "MONTH_CLOSING": {
         "label": "Month closing",
         "hint": "5 days before the end of the month, if transactions are left to categorize."
+      },
+      "BALANCE_LOW": {
+        "label": "Low balance",
+        "hint": "When the balance goes below the threshold set on each checking account page."
+      },
+      "LARGE_TRANSACTION": {
+        "label": "Large expense",
+        "hint": "When an expense is above the threshold below."
+      },
+      "INCOME_RECEIVED": {
+        "label": "Income received",
+        "hint": "When an income arrives (salary…)."
+      },
+      "BUDGET_ALMOST_EXCEEDED": {
+        "label": "Budget almost reached",
+        "hint": "When a category reaches 80% of its monthly budget."
+      },
+      "BUDGET_EXCEEDED": {
+        "label": "Budget exceeded",
+        "hint": "When a category goes over its monthly budget."
       }
-    }
+    },
+    "largeThreshold": "Large expense threshold",
+    "largeThresholdHint": "An expense above this amount is notified. Empty: {amount}.",
+    "hideAmounts": "Hide amounts",
+    "hideAmountsHint": "Notifications on the lock screen show no amount."
   },
   "pushDevice": {
     "title": "This device",

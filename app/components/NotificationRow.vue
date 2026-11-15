@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One notification of the inbox: icon, text from notificationText() (the same as the push), age, unread dot.
 // A tap marks it read and opens its screen; the cross deletes it.
-import { CalendarClock, Clock, Link, Unplug, X } from 'lucide-vue-next'
+import { CalendarClock, Clock, Gauge, HandCoins, Link, ReceiptEuro, TrendingDown, TriangleAlert, Unplug, X } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import type { AppNotification, NotificationType } from '~/types/api'
 
@@ -27,6 +27,28 @@ const LOOK: Record<NotificationType, { icon: Component; tint: string }> = {
   CONNECTION_EXPIRED: { icon: Unplug, tint: 'bg-rose-100 text-rose-700' },
   CONNECTION_TO_CONFIGURE: { icon: Link, tint: 'bg-amber-100 text-amber-700' },
   MONTH_CLOSING: { icon: CalendarClock, tint: 'bg-indigo-100 text-indigo-700' },
+  BALANCE_LOW: { icon: TrendingDown, tint: 'bg-rose-100 text-rose-700' },
+  LARGE_TRANSACTION: { icon: ReceiptEuro, tint: 'bg-amber-100 text-amber-700' },
+  INCOME_RECEIVED: { icon: HandCoins, tint: 'bg-emerald-100 text-emerald-700' },
+  BUDGET_ALMOST_EXCEEDED: { icon: Gauge, tint: 'bg-amber-100 text-amber-700' },
+  BUDGET_EXCEEDED: { icon: TriangleAlert, tint: 'bg-rose-100 text-rose-700' },
+}
+
+/** Screen opened by a tap. */
+function linkOf(n: AppNotification): string {
+  switch (n.type) {
+    case 'MONTH_CLOSING':
+      return '/transactions/to-categorize?accounts=checking'
+    case 'BALANCE_LOW':
+    case 'LARGE_TRANSACTION':
+    case 'INCOME_RECEIVED':
+      return n.data?.accountId ? `/accounts/${n.data.accountId}` : '/'
+    case 'BUDGET_ALMOST_EXCEEDED':
+    case 'BUDGET_EXCEEDED':
+      return '/budget'
+    default:
+      return connectionPage.value
+  }
 }
 
 const view = computed(() => {
@@ -36,8 +58,7 @@ const view = computed(() => {
     t: (key, named, plural) => (plural === undefined ? t(key, named ?? {}) : t(key, named ?? {}, plural)),
     locale: locale.value,
   }) ?? { title: t('notifications.fallback'), body: '' }
-  const to = n.type === 'MONTH_CLOSING' ? '/transactions/to-categorize?accounts=checking' : connectionPage.value
-  return { ...LOOK[n.type], ...text, to }
+  return { ...LOOK[n.type], ...text, to: linkOf(n) }
 })
 </script>
 

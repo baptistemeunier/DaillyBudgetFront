@@ -455,15 +455,48 @@
       "MONTH_CLOSING": {
         "title": "Clôture du budget de {month}",
         "body": "Plus aucune transaction à catégoriser. | Encore {n} transaction à catégoriser avant la fin du mois. | Encore {n} transactions à catégoriser avant la fin du mois."
+      },
+      "BALANCE_LOW": {
+        "title": "Solde bas sur {account}",
+        "body": "{balance}, sous ton seuil de {threshold}.",
+        "bodyHidden": "Le solde est passé sous ton seuil."
+      },
+      "LARGE_TRANSACTION": {
+        "title": "Grosse dépense : {amount}",
+        "titleHidden": "Grosse dépense",
+        "body": "{description} · {account}",
+        "titleGrouped": "Aucune grosse dépense | {n} grosse dépense | {n} grosses dépenses",
+        "bodyGrouped": "Sur {account}"
+      },
+      "INCOME_RECEIVED": {
+        "title": "Revenu reçu : {amount}",
+        "titleHidden": "Revenu reçu",
+        "body": "{description} · {account}",
+        "titleGrouped": "Aucun revenu reçu | {n} revenu reçu | {n} revenus reçus",
+        "bodyGrouped": "Sur {account}"
+      },
+      "BUDGET_ALMOST_EXCEEDED": {
+        "title": "{category} : 80 % du budget atteint",
+        "body": "{spent} dépensés sur {budget} en {month}.",
+        "bodyHidden": "Pense à ralentir d'ici la fin de {month}."
+      },
+      "BUDGET_EXCEEDED": {
+        "title": "{category} : budget dépassé",
+        "body": "{spent} dépensés sur {budget} en {month}.",
+        "bodyHidden": "Le budget de {month} est dépassé pour cette catégorie."
       }
-    }
+    },
+    "yourAccount": "ton compte",
+    "aCategory": "Une catégorie"
   },
   "notificationSettings": {
     "title": "Notifications",
     "intro": "Choisis ce qui est envoyé sur ton téléphone. Toutes les notifications restent visibles dans la page Notifications, depuis la cloche de l'accueil.",
     "groups": {
       "connections": "Connexions bancaires",
-      "budget": "Budget"
+      "budget": "Budget",
+      "accounts": "Comptes",
+      "privacy": "Confidentialité"
     },
     "types": {
       "CONNECTION_EXPIRING": {
@@ -481,8 +514,32 @@
       "MONTH_CLOSING": {
         "label": "Clôture du mois",
         "hint": "5 jours avant la fin du mois, s'il reste des transactions à catégoriser."
+      },
+      "BALANCE_LOW": {
+        "label": "Solde bas",
+        "hint": "Quand le solde passe sous le seuil réglé sur la page de chaque compte courant."
+      },
+      "LARGE_TRANSACTION": {
+        "label": "Grosse dépense",
+        "hint": "Quand une dépense dépasse le seuil ci-dessous."
+      },
+      "INCOME_RECEIVED": {
+        "label": "Revenu reçu",
+        "hint": "Quand un revenu arrive (salaire…)."
+      },
+      "BUDGET_ALMOST_EXCEEDED": {
+        "label": "Budget presque atteint",
+        "hint": "Quand une catégorie atteint 80 % de son budget du mois."
+      },
+      "BUDGET_EXCEEDED": {
+        "label": "Budget dépassé",
+        "hint": "Quand une catégorie dépasse son budget du mois."
       }
-    }
+    },
+    "largeThreshold": "Seuil des grosses dépenses",
+    "largeThresholdHint": "Une dépense au-dessus de ce montant est signalée. Vide : {amount}.",
+    "hideAmounts": "Masquer les montants",
+    "hideAmountsHint": "Les notifications sur l'écran verrouillé n'affichent aucun montant."
   },
   "pushDevice": {
     "title": "Cet appareil",

@@ -145,7 +145,16 @@ export interface Bank extends HalResource {
 }
 
 /** Notification types this front can show (step 1 of docs/NOTIFICATIONS.md). */
-export type NotificationType = 'CONNECTION_EXPIRING' | 'CONNECTION_EXPIRED' | 'CONNECTION_TO_CONFIGURE' | 'MONTH_CLOSING'
+export type NotificationType =
+  | 'CONNECTION_EXPIRING'
+  | 'CONNECTION_EXPIRED'
+  | 'CONNECTION_TO_CONFIGURE'
+  | 'MONTH_CLOSING'
+  | 'BALANCE_LOW'
+  | 'LARGE_TRANSACTION'
+  | 'INCOME_RECEIVED'
+  | 'BUDGET_ALMOST_EXCEEDED'
+  | 'BUDGET_EXCEEDED'
 
 /**
  * Something that happened, from GET /notifications (the most recent first). The text is built here from
@@ -155,10 +164,25 @@ export type NotificationType = 'CONNECTION_EXPIRING' | 'CONNECTION_EXPIRED' | 'C
 export interface AppNotification extends HalResource {
   type: NotificationType
   data: {
-    /** MONTH_CLOSING: transactions of the month left to categorize. */
+    /** MONTH_CLOSING: transactions left to categorize; LARGE_TRANSACTION / INCOME_RECEIVED: grouped transactions. */
     count?: number
-    /** MONTH_CLOSING: "YYYY-MM". */
+    /** MONTH_CLOSING, BUDGET_*: "YYYY-MM". */
     month?: string
+    /** BALANCE_LOW, LARGE_TRANSACTION, INCOME_RECEIVED: the account (link of the inbox row). */
+    accountId?: string
+    accountName?: string
+    /** Signed decimals, as everywhere in the API. */
+    balance?: string
+    threshold?: string
+    amount?: string
+    currency?: string
+    /** LARGE_TRANSACTION / INCOME_RECEIVED (one transaction). */
+    description?: string
+    /** BUDGET_*: system category code (label translated by the front) or user category name. */
+    categoryCode?: string | null
+    categoryName?: string | null
+    spent?: string
+    budget?: string
     /** CONNECTION_*: end of the bank access. */
     expiresAt?: string
     /** CONNECTION_*: bank name, written by the API (the service worker can't fetch it). */

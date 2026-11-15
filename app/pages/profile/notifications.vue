@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // Notification settings: push on / off per type. A notification always shows in the inbox;
 // the switch only decides whether it is also pushed to the phone.
-// Saved at each switch (POST on the first change, PATCH after); the full push map is sent each time.
-// On top: Web Push on this device and the subscribed devices (PushDeviceSection).
-import type { NotificationType } from '~/types/api'
+// Also: the large expense threshold and "hide amounts" (lock screen). The low balance threshold is per
+// account (AccountSettingsCard). Saved at each change (POST on the first one, PATCH after); the full push
+// map is sent each time. On top: Web Push on this device and the subscribed devices (PushDeviceSection).
+import type { NotificationSettings, NotificationType } from '~/types/api'
 
 const { t } = useI18n()
 const { data: settings, isPending, isError, refetch } = useNotificationSettingsQuery()
@@ -12,21 +13,53 @@ const error = ref<string | null>(null)
 
 const groups: { key: string; types: NotificationType[] }[] = [
   { key: 'connections', types: ['CONNECTION_EXPIRING', 'CONNECTION_EXPIRED', 'CONNECTION_TO_CONFIGURE'] },
-  { key: 'budget', types: ['MONTH_CLOSING'] },
+  { key: 'accounts', types: ['BALANCE_LOW', 'LARGE_TRANSACTION', 'INCOME_RECEIVED'] },
+  { key: 'budget', types: ['MONTH_CLOSING', 'BUDGET_ALMOST_EXCEEDED', 'BUDGET_EXCEEDED'] },
 ]
 
 const push = computed<Record<NotificationType, boolean>>(() => ({ ...PUSH_DEFAULTS, ...(settings.value?.push ?? {}) }))
 
-async function toggle(type: NotificationType) {
+async function saveChanges(changes: Partial<Omit<NotificationSettings, '_links'>>) {
   // One save at a time: the first one creates the settings, a second POST would be refused.
   if (save.isPending.value || settings.value === undefined) return
   error.value = null
   try {
-    await save.mutateAsync({ current: settings.value, changes: { push: { ...push.value, [type]: !push.value[type] } } })
+    await save.mutateAsync({ current: settings.value, changes })
   } catch (e) {
     error.value = apiErrorMessage(e, t('errors.saveFailedRetry'))
   }
 }
+
+const toggle = (type: NotificationType) => saveChanges({ push: { ...push.value, [type]: !push.value[type] } })
+
+// Large expense threshold: saved on blur / Enter; empty = the API default.
+const thresholdId = useId()
+const defaultThreshold = centsToInput(toCents(DEFAULT_LARGE_TRANSACTION_THRESHOLD))
+const toInput = (value: string | null | undefined) => (value ? centsToInput(toCents(value)) : '')
+const threshold = ref('')
+watch(
+  () => settings.value?.largeTransactionThreshold,
+  (value) => {
+    threshold.value = toInput(value)
+  },
+  { immediate: true },
+)
+const thresholdInvalid = ref(false)
+
+function saveThreshold() {
+  const input = threshold.value.trim()
+  const cents = input ? parseAmountInput(input) : null
+  thresholdInvalid.value = !!input && (cents === null || cents <= 0)
+  if (thresholdInvalid.value) return
+  // Empty: the default is sent explicitly (null may mean something else on the API).
+  const value = cents === null ? DEFAULT_LARGE_TRANSACTION_THRESHOLD : centsToDecimal(cents)
+  if (cents === null) threshold.value = toInput(value)
+  const current = settings.value?.largeTransactionThreshold ?? DEFAULT_LARGE_TRANSACTION_THRESHOLD
+  if (toCents(value) === toCents(current)) return
+  saveChanges({ largeTransactionThreshold: value })
+}
+
+const hideAmounts = computed(() => settings.value?.hideAmounts ?? false)
 </script>
 
 <template>
@@ -54,31 +87,53 @@ async function toggle(type: NotificationType) {
         </h2>
         <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <li v-for="type in group.types" :key="type">
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="push[type]"
-              class="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:cursor-wait"
+            <SettingSwitch
+              :label="$t(`notificationSettings.types.${type}.label`)"
+              :hint="$t(`notificationSettings.types.${type}.hint`)"
+              :checked="push[type]"
               :disabled="save.isPending.value"
-              @click="toggle(type)"
-            >
-              <span class="flex min-w-0 flex-1 flex-col">
-                <span class="text-[15px] font-medium">{{ $t(`notificationSettings.types.${type}.label`) }}</span>
-                <span class="text-[13px] text-slate-500">{{ $t(`notificationSettings.types.${type}.hint`) }}</span>
-              </span>
-              <span
-                class="relative h-6 w-10 flex-none rounded-full transition-colors"
-                :class="push[type] ? 'bg-indigo-600' : 'bg-slate-300'"
-                aria-hidden="true"
-              >
-                <span
-                  class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform"
-                  :class="push[type] ? 'translate-x-4' : ''"
+              @toggle="toggle(type)"
+            />
+            <!-- Threshold of LARGE_TRANSACTION, right under its switch -->
+            <div v-if="type === 'LARGE_TRANSACTION'" class="flex flex-col gap-1.5 px-4 pb-4">
+              <label :for="thresholdId" class="text-[13px] font-medium text-slate-700">{{ $t('notificationSettings.largeThreshold') }}</label>
+              <div class="relative">
+                <input
+                  :id="thresholdId"
+                  v-model="threshold"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  :placeholder="defaultThreshold"
+                  :aria-invalid="thresholdInvalid"
+                  :aria-describedby="`${thresholdId}-hint`"
+                  class="min-h-11 w-full rounded-xl border border-slate-300 bg-white pr-8 pl-3 text-[15px] tabular-nums focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none aria-invalid:border-rose-400"
+                  @blur="saveThreshold"
+                  @keydown.enter="($event.target as HTMLInputElement).blur()"
                 />
-              </span>
-            </button>
+                <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-slate-500">€</span>
+              </div>
+              <p v-if="thresholdInvalid" class="text-xs text-rose-700">{{ $t('common.invalidAmount') }}</p>
+              <p v-else :id="`${thresholdId}-hint`" class="text-xs text-slate-500">
+                {{ $t('notificationSettings.largeThresholdHint', { amount: formatCents(toCents(DEFAULT_LARGE_TRANSACTION_THRESHOLD)) }) }}
+              </p>
+            </div>
           </li>
         </ul>
+      </section>
+
+      <section class="flex flex-col gap-2" aria-labelledby="notif-group-privacy">
+        <h2 id="notif-group-privacy" class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+          {{ $t('notificationSettings.groups.privacy') }}
+        </h2>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <SettingSwitch
+            :label="$t('notificationSettings.hideAmounts')"
+            :hint="$t('notificationSettings.hideAmountsHint')"
+            :checked="hideAmounts"
+            :disabled="save.isPending.value"
+            @toggle="saveChanges({ hideAmounts: !hideAmounts })"
+          />
+        </div>
       </section>
     </template>
   </main>

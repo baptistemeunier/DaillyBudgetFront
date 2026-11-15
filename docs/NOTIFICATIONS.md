@@ -182,7 +182,22 @@ Avec 1 à 3 syncs par jour, un utilisateur ne doit pas recevoir un push à chacu
 { "type": "MONTH_CLOSING", "data": { "month": "2026-11", "count": 8 }, "locale": "fr", "hideAmounts": false, "url": "/transactions/to-categorize?accounts=checking", "tag": "MONTH_CLOSING_0193…_2026-11", "notification": "/notifications/0193…" }
 ```
 
-Le service worker en tire « Clôture du budget de novembre · Encore 8 transactions à catégoriser avant la fin du mois. ». `url` est l'écran ouvert au clic, `notification` l'IRI marquée comme lue à l'ouverture (`?notification={id}`).
+Le service worker en tire « Clôture du budget de novembre · Encore 8 transactions à catégoriser avant la fin du mois. ».
+
+### Contrat de `data` par type
+
+Le texte est composé par `app/utils/notificationText.ts`, qui ne lit **que** `data`. Tout ce qu'il affiche doit donc y être. Les montants sont des décimaux signés en chaîne, comme dans le reste de l'API, et `currency` est le code ISO.
+
+| Type | Sujet (lien HAL) | `data` |
+|---|---|---|
+| `CONNECTION_EXPIRING`, `CONNECTION_EXPIRED`, `CONNECTION_TO_CONFIGURE` | `accountConnection` | `bankName`, `expiresAt` (sauf `TO_CONFIGURE`) |
+| `MONTH_CLOSING` | aucun | `month` (« YYYY-MM »), `count` |
+| `BALANCE_LOW` | `account` | `accountId`, `accountName`, `balance`, `threshold`, `currency` |
+| `LARGE_TRANSACTION`, `INCOME_RECEIVED` (une transaction) | `transaction` | `accountId`, `accountName`, `amount`, `currency`, `description` |
+| `LARGE_TRANSACTION`, `INCOME_RECEIVED` (regroupées) | `account` | `accountId`, `accountName`, `count` |
+| `BUDGET_ALMOST_EXCEEDED`, `BUDGET_EXCEEDED` | `category` | `categoryCode` (catégorie système, traduite par le front) ou `categoryName` (catégorie perso), `spent`, `budget`, `currency`, `month` |
+
+`accountId` sert au lien de la boîte de notifications (`/accounts/{id}`). Pour le push, le lien est le champ `url` de la notification. `url` est l'écran ouvert au clic, `notification` l'IRI marquée comme lue à l'ouverture (`?notification={id}`).
 
 Le contenu est chiffré de bout en bout par Web Push, mais il s'affiche sur l'écran verrouillé. Avec `hideAmounts: true`, le texte ne contient aucun montant.
 

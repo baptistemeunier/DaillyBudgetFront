@@ -7,6 +7,11 @@ const HANDLED_NOTIFICATIONS: string[] = [
   'CONNECTION_EXPIRED',
   'CONNECTION_TO_CONFIGURE',
   'MONTH_CLOSING',
+  'BALANCE_LOW',
+  'LARGE_TRANSACTION',
+  'INCOME_RECEIVED',
+  'BUDGET_ALMOST_EXCEEDED',
+  'BUDGET_EXCEEDED',
 ] satisfies NotificationType[]
 
 export const isHandledNotification = (n: AppNotification) => HANDLED_NOTIFICATIONS.includes(n.type)
@@ -111,7 +116,15 @@ export const PUSH_DEFAULTS: Record<NotificationType, boolean> = {
   CONNECTION_EXPIRED: true,
   CONNECTION_TO_CONFIGURE: true,
   MONTH_CLOSING: true,
+  BALANCE_LOW: true,
+  LARGE_TRANSACTION: true,
+  INCOME_RECEIVED: false,
+  BUDGET_ALMOST_EXCEEDED: true,
+  BUDGET_EXCEEDED: true,
 }
+
+/** NotificationSettings.DEFAULT_LARGE_TRANSACTION_THRESHOLD on the API. */
+export const DEFAULT_LARGE_TRANSACTION_THRESHOLD = '200.00'
 
 /** The user's notification settings, or null before the first change. */
 export function useNotificationSettingsQuery() {
