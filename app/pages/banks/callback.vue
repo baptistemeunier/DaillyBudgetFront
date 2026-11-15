@@ -7,7 +7,9 @@ const error = ref<string | null>(null)
 
 onMounted(async () => {
   const connectionId = route.query.ref
-  if (route.query.error) {
+  // ConsentLinkReused: the link was already used (consent usually given on the first visit),
+  // so the sync is still attempted; it fails on its own if the consent is not valid.
+  if (route.query.error && route.query.error !== 'ConsentLinkReused') {
     error.value = String(route.query.details ?? route.query.error)
     return
   }
