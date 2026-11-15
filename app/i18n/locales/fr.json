@@ -205,6 +205,11 @@
       "title": "{n} transaction à catégoriser | {n} transaction à catégoriser | {n} transactions à catégoriser",
       "text": "Classe-les pour que ton budget de {month} soit juste.",
       "cta": "Catégoriser"
+    },
+    "toReview": {
+      "title": "{n} transaction classée automatiquement | {n} transaction classée automatiquement | {n} transactions classées automatiquement",
+      "text": "Tes règles les ont catégorisées : vérifie qu'elles sont bien classées.",
+      "cta": "Vérifier"
     }
   },
   "toCategorize": {
@@ -402,5 +407,17 @@
     "duplicate": "Une règle existe déjà pour ces mots et ce sens : modifie-la plutôt.",
     "deleteTitle": "Supprimer la règle {name} ?",
     "deleteText": "Les transactions déjà catégorisées par cette règle gardent leur catégorie."
+  },
+  "toReview": {
+    "title": "À vérifier",
+    "remaining": "{n} transaction à vérifier | {n} transaction à vérifier | {n} transactions à vérifier",
+    "intro": "Classées par tes règles. Confirme, ou touche une transaction pour corriger sa catégorie.",
+    "confirm": "Confirmer",
+    "confirmNamed": "Confirmer la catégorie de {name}",
+    "confirmed": "Vérifiée",
+    "confirmAll": "Tout confirmer",
+    "confirmAllFailed": "{failed} transaction sur {total} n'a pas pu être confirmée. | {failed} transaction sur {total} n'a pas pu être confirmée. | {failed} transactions sur {total} n'ont pas pu être confirmées.",
+    "done": "Tout est vérifié 🎉",
+    "rules": "Gérer mes règles"
   }
 }

@@ -98,6 +98,11 @@ export function splitCategoryIri(split: TransactionSplit): string | null {
   return split.category?._links?.self?.href ?? split._links?.category?.href ?? null
 }
 
+/** The transaction has a split set by a categorization rule (not confirmed by the user yet). */
+export function isAutoCategorized(transaction: Transaction): boolean {
+  return (transaction.splits ?? []).some((s) => s.source === 'rule')
+}
+
 /** Category IRI of a categorization rule, whatever the HAL rendering. */
 export function ruleCategoryIri(rule: CategorizationRule): string | null {
   return (typeof rule.category === 'string' ? rule.category : null) ?? rule._links.category?.href ?? null

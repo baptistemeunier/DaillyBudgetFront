@@ -205,6 +205,11 @@
       "title": "{n} transactions to categorize | {n} transaction to categorize | {n} transactions to categorize",
       "text": "Sort them so your {month} budget is accurate.",
       "cta": "Categorize"
+    },
+    "toReview": {
+      "title": "{n} transactions categorized automatically | {n} transaction categorized automatically | {n} transactions categorized automatically",
+      "text": "Your rules categorized them: check they are right.",
+      "cta": "Review"
     }
   },
   "toCategorize": {
@@ -402,5 +407,17 @@
     "duplicate": "A rule already exists for these words and direction: edit it instead.",
     "deleteTitle": "Delete the rule {name}?",
     "deleteText": "The transactions already categorized by this rule keep their category."
+  },
+  "toReview": {
+    "title": "To review",
+    "remaining": "{n} transactions to review | {n} transaction to review | {n} transactions to review",
+    "intro": "Categorized by your rules. Confirm, or tap a transaction to correct its category.",
+    "confirm": "Confirm",
+    "confirmNamed": "Confirm the category of {name}",
+    "confirmed": "Reviewed",
+    "confirmAll": "Confirm all",
+    "confirmAllFailed": "{failed} transactions out of {total} could not be confirmed. | {failed} transaction out of {total} could not be confirmed. | {failed} transactions out of {total} could not be confirmed.",
+    "done": "Everything is reviewed 🎉",
+    "rules": "Manage my rules"
   }
 }

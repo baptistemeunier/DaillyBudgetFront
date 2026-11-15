@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, CategorizationRule, CategorizationRuleInput, Category, EnvelopeInput, HalCollection, Transaction, UserAction } from '~/types/api'
+import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, CategorizationRule, CategorizationRuleInput, Category, EnvelopeInput, HalCollection, Transaction, UserAction, UserActionType } from '~/types/api'
 import type { AccountScope } from '~/utils/accounts'
 
 export function useConnectionsQuery() {
@@ -15,9 +15,19 @@ export function useUserActionsQuery() {
   const api = useApi()
   return useQuery({
     queryKey: ['user_actions'],
-    queryFn: async () => halItems(await api<HalCollection<UserAction>>('/user_actions')),
+    // Only the types this front can show (the API may add new ones before the front handles them).
+    queryFn: async () =>
+      halItems(await api<HalCollection<UserAction>>('/user_actions')).filter((a) => HANDLED_ACTIONS.includes(a.type)),
   })
 }
+
+const HANDLED_ACTIONS: string[] = [
+  'CONNECTION_EXPIRED',
+  'CONNECTION_TO_CONFIGURE',
+  'CONNECTION_EXPIRING',
+  'TRANSACTIONS_TO_CATEGORIZE',
+  'TRANSACTIONS_TO_REVIEW',
+] satisfies UserActionType[]
 
 /** Accounts of one connection, fetched through its HAL `accounts` link. */
 export function useAccountsQuery(href: MaybeRefOrGetter<string | undefined>) {
@@ -233,6 +243,20 @@ export function useUncategorizedTransactionsQuery(scope: MaybeRefOrGetter<Accoun
   })
 }
 
+/** Transactions categorized by a rule, not yet confirmed or corrected by the user, page by page. */
+export function useAutoCategorizedTransactionsQuery() {
+  const api = useApi()
+  return useInfiniteQuery({
+    queryKey: ['transactions', 'auto-categorized'],
+    // Refetched on each visit: rows confirmed last time are gone.
+    staleTime: 0,
+    initialPageParam: '',
+    queryFn: ({ pageParam }) =>
+      api<HalCollection<Transaction>>(pageParam || `/transactions?${new URLSearchParams({ autoCategorized: 'true', page: '1' })}`),
+    getNextPageParam: (last) => last._links.next?.href,
+  })
+}
+
 /**
  * System + user categories, as a tree (labels from app/i18n, Lucide icons from app/utils/categoryIcons.ts).
  * Keyed by locale: the labels are baked into the tree, a language switch builds a new one.
@@ -301,24 +325,50 @@ export function useUpdateSplits() {
         queryClient.invalidateQueries({ queryKey: ['account'] })
         for (const iri of counterparts) queryClient.invalidateQueries({ queryKey: ['transactions', iriId(iri)] })
       }
-      queryClient.setQueriesData<InfiniteData<HalCollection<Transaction>>>(
-        { queryKey: ['transactions'] },
-        (data) =>
-          data && {
-            ...data,
-            pages: data.pages.map((page) => ({
-              ...page,
-              _embedded: page._embedded && {
-                ...page._embedded,
-                item: page._embedded.item?.map((t) =>
-                  t._links.self.href === updated._links.self.href ? { ...t, ...updated } : t,
-                ),
-              },
-            })),
-          },
-      )
+      patchCachedTransaction(queryClient, updated)
     },
   })
+}
+
+/**
+ * Confirms the splits set by a rule (source "rule" → "confirmed", still linked to the rule).
+ * The API answers 422 when the transaction has no split set by a rule.
+ */
+export function useConfirmTransaction() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (transaction: Transaction) =>
+      api<Transaction>(transaction._links.self.href, {
+        method: 'PATCH',
+        body: { confirm: true },
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+      patchCachedTransaction(queryClient, updated)
+    },
+  })
+}
+
+/** Replaces a transaction in every cached transaction list (rows stay in place until the next refetch). */
+function patchCachedTransaction(queryClient: ReturnType<typeof useQueryClient>, updated: Transaction) {
+  queryClient.setQueriesData<InfiniteData<HalCollection<Transaction>>>(
+    { queryKey: ['transactions'] },
+    (data) =>
+      data && {
+        ...data,
+        pages: data.pages.map((page) => ({
+          ...page,
+          _embedded: page._embedded && {
+            ...page._embedded,
+            item: page._embedded.item?.map((t) =>
+              t._links.self.href === updated._links.self.href ? { ...t, ...updated } : t,
+            ),
+          },
+        })),
+      },
+  )
 }
 
 /** Creates a user sub-category under a root; resolves once the category tree includes it. */

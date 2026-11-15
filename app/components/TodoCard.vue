@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Clock, Link, Loader2, Tag, Unplug } from 'lucide-vue-next'
+import { ArrowRight, Clock, Link, Loader2, Tag, Unplug, WandSparkles } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import type { UserAction } from '~/types/api'
 
@@ -46,6 +46,7 @@ const TINTS = {
   rose: { badge: 'bg-rose-100 text-rose-700', button: 'bg-rose-600 text-white' },
   amber: { badge: 'bg-amber-100 text-amber-700', button: 'bg-amber-100 text-amber-800' },
   indigo: { badge: 'bg-indigo-100 text-indigo-700', button: 'bg-indigo-600 text-white' },
+  emerald: { badge: 'bg-emerald-100 text-emerald-700', button: 'bg-emerald-100 text-emerald-800' },
 }
 
 const view = computed<CardView>(() => {
@@ -91,6 +92,15 @@ const view = computed<CardView>(() => {
         to: '/transactions/to-categorize',
       }
     }
+    case 'TRANSACTIONS_TO_REVIEW':
+      return {
+        icon: WandSparkles,
+        tint: TINTS.emerald,
+        title: t('todo.toReview.title', a.count ?? 0),
+        text: t('todo.toReview.text'),
+        cta: t('todo.toReview.cta'),
+        to: '/transactions/to-review',
+      }
   }
 })
 

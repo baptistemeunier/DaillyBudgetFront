@@ -80,6 +80,9 @@ export interface Transaction extends HalResource {
  */
 export interface TransactionSplit {
   amount: string
+  /** "rule": set by a categorization rule, to review; "confirmed": set by a rule and confirmed by the user;
+   *  "manual": set or corrected by the user. */
+  source?: 'manual' | 'rule' | 'confirmed'
   category?: string | null | { _links?: { self?: HalLink } }
   /** Saving split towards a manual account: its mirror transaction and that account. */
   _links?: { category?: HalLink; counterpartTransaction?: HalLink; counterpartAccount?: HalLink }
@@ -144,6 +147,7 @@ export type UserActionType =
   | 'CONNECTION_TO_CONFIGURE'
   | 'CONNECTION_EXPIRING'
   | 'TRANSACTIONS_TO_CATEGORIZE'
+  | 'TRANSACTIONS_TO_REVIEW'
 
 /** Something the user has to deal with, from GET /user_actions (sorted by priority). */
 export interface UserAction extends HalResource {
