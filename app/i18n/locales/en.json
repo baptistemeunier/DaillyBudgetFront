@@ -92,7 +92,10 @@
   "accountSettings": {
     "atBank": "At the bank: {name}",
     "displayName": "Display name",
-    "budgetHint": "Only checking accounts count towards the budget."
+    "budgetHint": "Only checking accounts count towards the budget.",
+    "lowBalance": "Notify me if the balance goes below",
+    "lowBalancePlaceholder": "No alert",
+    "lowBalanceHint": "A notification when the balance goes below this amount, after a sync. Leave empty not to be notified."
   },
   "account": {
     "noTransactions": "No transactions yet.",
@@ -342,7 +345,8 @@
     "manualAccounts": "Manual accounts",
     "addManualAccount": "Add a manual account",
     "customCategories": "Categories and envelopes",
-    "rules": "Categorization rules"
+    "rules": "Categorization rules",
+    "notifications": "Notifications"
   },
   "categorySettings": {
     "title": "Categories and envelopes",
@@ -419,5 +423,45 @@
     "confirmAllFailed": "{failed} transactions out of {total} could not be confirmed. | {failed} transaction out of {total} could not be confirmed. | {failed} transactions out of {total} could not be confirmed.",
     "done": "Everything is reviewed 🎉",
     "rules": "Manage my rules"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notification yet.",
+    "loadFailed": "Could not load the notifications.",
+    "markAllRead": "Read all",
+    "markAllFailed": "Some notifications could not be marked as read, try again.",
+    "unread": "Unread",
+    "deleteNamed": "Delete the notification “{name}”",
+    "bellUnread": "Notifications, {n} unread | Notifications, {n} unread | Notifications, {n} unread",
+    "monthClosing": {
+      "title": "Closing the {month} budget",
+      "text": "No transaction left to categorize. | {n} transaction left to categorize before the end of the month. | {n} transactions left to categorize before the end of the month."
+    }
+  },
+  "notificationSettings": {
+    "title": "Notifications",
+    "intro": "Choose what is sent to your phone. Every notification stays visible in the Notifications page, from the bell on the home screen.",
+    "groups": {
+      "connections": "Bank connections",
+      "budget": "Budget"
+    },
+    "types": {
+      "CONNECTION_EXPIRING": {
+        "label": "Access expiring soon",
+        "hint": "7 days then 1 day before your bank access ends."
+      },
+      "CONNECTION_EXPIRED": {
+        "label": "Access expired",
+        "hint": "Your balances are no longer updated: reconnect the bank."
+      },
+      "CONNECTION_TO_CONFIGURE": {
+        "label": "Connection to finalize",
+        "hint": "The authorization with your bank was not completed."
+      },
+      "MONTH_CLOSING": {
+        "label": "Month closing",
+        "hint": "5 days before the end of the month, if transactions are left to categorize."
+      }
+    }
   }
 }

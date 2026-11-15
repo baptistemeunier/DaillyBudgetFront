@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Settings of one account: display name (saved on blur / Enter) and type.
+// Settings of one account: display name (saved on blur / Enter), type, and for a bank checking account
+// the low balance threshold (notification BALANCE_LOW; empty = no alert).
 import { Check, Loader2 } from 'lucide-vue-next'
 import type { Account, AccountType } from '~/types/api'
 
@@ -17,7 +18,7 @@ watch(
 )
 
 const saved = ref(false)
-async function save(changes: { displayName?: string | null; type?: AccountType }) {
+async function save(changes: { displayName?: string | null; type?: AccountType; lowBalanceThreshold?: string | null }) {
   saved.value = false
   try {
     await update.mutateAsync({ account: props.account, changes })
@@ -31,6 +32,30 @@ function saveName() {
   const value = name.value.trim() || null
   if (value === (props.account.displayName ?? null)) return
   save({ displayName: value })
+}
+
+// Low balance threshold: bank checking accounts only (the API checks it after each sync).
+const thresholdId = useId()
+const showThreshold = computed(() => props.account.type === 'checking' && !props.account.manual)
+const toInput = (value: string | null | undefined) => (value ? centsToInput(toCents(value)) : '')
+const threshold = ref(toInput(props.account.lowBalanceThreshold))
+watch(
+  () => props.account.lowBalanceThreshold,
+  (value) => {
+    threshold.value = toInput(value)
+  },
+)
+const thresholdInvalid = ref(false)
+
+function saveThreshold() {
+  const input = threshold.value.trim()
+  const cents = input ? parseAmountInput(input) : null
+  thresholdInvalid.value = !!input && (cents === null || cents < 0)
+  if (thresholdInvalid.value) return
+  const value = cents === null ? null : centsToDecimal(cents)
+  const current = props.account.lowBalanceThreshold ?? null
+  if (value === current || (value !== null && current !== null && toCents(value) === toCents(current))) return
+  save({ lowBalanceThreshold: value })
 }
 
 const types: AccountType[] = ['checking', 'savings', 'investment']
@@ -82,6 +107,27 @@ function setType(type: AccountType) {
         </button>
       </div>
       <p class="text-xs text-slate-500">{{ $t('accountSettings.budgetHint') }}</p>
+    </div>
+
+    <div v-if="showThreshold" class="flex flex-col gap-1.5">
+      <label :for="thresholdId" class="text-[13px] font-medium text-slate-700">{{ $t('accountSettings.lowBalance') }}</label>
+      <div class="relative">
+        <input
+          :id="thresholdId"
+          v-model="threshold"
+          inputmode="decimal"
+          autocomplete="off"
+          :placeholder="$t('accountSettings.lowBalancePlaceholder')"
+          :aria-invalid="thresholdInvalid"
+          :aria-describedby="`${thresholdId}-hint`"
+          class="min-h-12 w-full rounded-xl border border-slate-300 bg-white pr-8 pl-3 text-[15px] tabular-nums focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none aria-invalid:border-rose-400"
+          @blur="saveThreshold"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-slate-500">€</span>
+      </div>
+      <p v-if="thresholdInvalid" class="text-xs text-rose-700">{{ $t('common.invalidAmount') }}</p>
+      <p v-else :id="`${thresholdId}-hint`" class="text-xs text-slate-500">{{ $t('accountSettings.lowBalanceHint') }}</p>
     </div>
 
     <p v-if="update.isError.value" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">

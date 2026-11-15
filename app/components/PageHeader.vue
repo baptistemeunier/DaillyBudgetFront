@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Page header: optional back button, centered title, optional trailing action.
+// Page header: optional back button, centered title, optional trailing action(s).
+// Equal side columns keep the title centered; they grow with their content (two buttons, a text button).
 import { ArrowLeft } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{ title?: string; back?: string | false }>(), {
@@ -15,7 +16,7 @@ function goBack() {
 </script>
 
 <template>
-  <header class="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
+  <header class="grid grid-cols-[minmax(2.75rem,1fr)_minmax(0,auto)_minmax(2.75rem,1fr)] items-center gap-2">
     <div class="flex">
       <slot name="leading">
         <button
@@ -32,7 +33,7 @@ function goBack() {
     <h1 class="truncate text-center text-xl font-bold">
       <slot>{{ title }}</slot>
     </h1>
-    <div class="flex justify-end">
+    <div class="flex justify-end gap-2">
       <slot name="trailing" />
     </div>
   </header>

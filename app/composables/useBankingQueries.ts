@@ -59,7 +59,7 @@ export function useBankQuery(href: MaybeRefOrGetter<string | undefined>) {
  * Every item of a paginated collection: read page 1 for totalItems / itemsPerPage,
  * then load the remaining pages in parallel. Deduped on _links.self.
  */
-async function fetchAllPages<T extends { _links: { self: { href: string } } }>(
+export async function fetchAllPages<T extends { _links: { self: { href: string } } }>(
   api: ReturnType<typeof useApi>,
   path: string,
   query: Record<string, string> = {},
@@ -183,7 +183,7 @@ export function useUpdateAccount() {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ account, changes }: { account: Account; changes: { displayName?: string | null; type?: AccountType } }) =>
+    mutationFn: ({ account, changes }: { account: Account; changes: { displayName?: string | null; type?: AccountType; lowBalanceThreshold?: string | null } }) =>
       api<Account>(account._links.self.href, {
         method: 'PATCH',
         body: changes,

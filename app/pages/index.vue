@@ -82,6 +82,7 @@ const setOpen = (id: string, value: boolean) => {
         </NuxtLink>
       </template>
       <template #trailing>
+        <NotificationBell />
         <button
           type="button"
           class="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60"

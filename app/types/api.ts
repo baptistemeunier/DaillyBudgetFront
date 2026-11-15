@@ -47,6 +47,8 @@ export interface Account extends HalResource {
   type: AccountType
   /** Created by hand (POST /accounts): no bank, no sync, savings or investment only. */
   manual?: boolean
+  /** Checking account: BALANCE_LOW is sent when the balance goes below it (decimal); null = no alert. */
+  lowBalanceThreshold?: string | null
   _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink }
 }
 
@@ -140,6 +142,44 @@ export interface Bank extends HalResource {
   name: string
   logo: string | null
   countries: string[]
+}
+
+/** Notification types this front can show (step 1 of docs/NOTIFICATIONS.md). */
+export type NotificationType = 'CONNECTION_EXPIRING' | 'CONNECTION_EXPIRED' | 'CONNECTION_TO_CONFIGURE' | 'MONTH_CLOSING'
+
+/**
+ * Something that happened, from GET /notifications (the most recent first). The text is built here from
+ * `type` + `data`; the subject is one HAL link (accountConnection, account, transaction or category).
+ * Named AppNotification to avoid the DOM Notification.
+ */
+export interface AppNotification extends HalResource {
+  type: NotificationType
+  data: {
+    /** MONTH_CLOSING: transactions of the month left to categorize. */
+    count?: number
+    /** MONTH_CLOSING: "YYYY-MM". */
+    month?: string
+    /** CONNECTION_*: end of the bank access. */
+    expiresAt?: string
+  } | null
+  read: boolean
+  readAt: string | null
+  createdAt: string
+  _links: HalResource['_links'] & {
+    accountConnection?: HalLink
+    'account-connection'?: HalLink
+    account?: HalLink
+    transaction?: HalLink
+    category?: HalLink
+  }
+}
+
+/** GET /notification_settings: 0 or 1 item per user. A missing key = the default of the type. */
+export interface NotificationSettings extends HalResource {
+  /** Push on / off per type (the notification always shows in the inbox). */
+  push: Partial<Record<NotificationType, boolean>>
+  largeTransactionThreshold?: string | null
+  hideAmounts?: boolean
 }
 
 export type UserActionType =

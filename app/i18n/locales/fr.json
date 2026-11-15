@@ -92,7 +92,10 @@
   "accountSettings": {
     "atBank": "À la banque : {name}",
     "displayName": "Nom affiché",
-    "budgetHint": "Seuls les comptes courants comptent dans le budget."
+    "budgetHint": "Seuls les comptes courants comptent dans le budget.",
+    "lowBalance": "Me prévenir si le solde passe sous",
+    "lowBalancePlaceholder": "Aucune alerte",
+    "lowBalanceHint": "Une notification quand le solde passe sous ce montant, après une synchronisation. Laisse vide pour ne pas être prévenu."
   },
   "account": {
     "noTransactions": "Aucune transaction pour l'instant.",
@@ -342,7 +345,8 @@
     "manualAccounts": "Comptes manuels",
     "addManualAccount": "Ajouter un compte manuel",
     "customCategories": "Catégories et enveloppes",
-    "rules": "Règles de catégorisation"
+    "rules": "Règles de catégorisation",
+    "notifications": "Notifications"
   },
   "categorySettings": {
     "title": "Catégories et enveloppes",
@@ -419,5 +423,45 @@
     "confirmAllFailed": "{failed} transaction sur {total} n'a pas pu être confirmée. | {failed} transaction sur {total} n'a pas pu être confirmée. | {failed} transactions sur {total} n'ont pas pu être confirmées.",
     "done": "Tout est vérifié 🎉",
     "rules": "Gérer mes règles"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification pour l'instant.",
+    "loadFailed": "Impossible de charger les notifications.",
+    "markAllRead": "Tout lire",
+    "markAllFailed": "Certaines notifications n'ont pas pu être marquées comme lues, réessayez.",
+    "unread": "Non lue",
+    "deleteNamed": "Supprimer la notification « {name} »",
+    "bellUnread": "Notifications, {n} non lue | Notifications, {n} non lue | Notifications, {n} non lues",
+    "monthClosing": {
+      "title": "Clôture du budget de {month}",
+      "text": "Plus aucune transaction à catégoriser. | Encore {n} transaction à catégoriser avant la fin du mois. | Encore {n} transactions à catégoriser avant la fin du mois."
+    }
+  },
+  "notificationSettings": {
+    "title": "Notifications",
+    "intro": "Choisis ce qui est envoyé sur ton téléphone. Toutes les notifications restent visibles dans la page Notifications, depuis la cloche de l'accueil.",
+    "groups": {
+      "connections": "Connexions bancaires",
+      "budget": "Budget"
+    },
+    "types": {
+      "CONNECTION_EXPIRING": {
+        "label": "Accès bientôt expiré",
+        "hint": "7 jours puis 1 jour avant la fin de l'accès à ta banque."
+      },
+      "CONNECTION_EXPIRED": {
+        "label": "Accès expiré",
+        "hint": "Tes soldes ne sont plus mis à jour : il faut reconnecter la banque."
+      },
+      "CONNECTION_TO_CONFIGURE": {
+        "label": "Connexion à finaliser",
+        "hint": "L'autorisation auprès de ta banque n'a pas été terminée."
+      },
+      "MONTH_CLOSING": {
+        "label": "Clôture du mois",
+        "hint": "5 jours avant la fin du mois, s'il reste des transactions à catégoriser."
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Landmark, Tags, WandSparkles } from 'lucide-vue-next'
+import { Bell, ChevronRight, Landmark, Tags, WandSparkles } from 'lucide-vue-next'
 
 const { locale, locales, setLocale } = useI18n()
 </script>
@@ -26,6 +26,11 @@ const { locale, locales, setLocale } = useI18n()
         <NuxtLink to="/profile/rules" class="flex min-h-12 items-center gap-3 px-4 py-3 hover:bg-slate-50">
           <WandSparkles class="size-5 flex-none text-slate-700" aria-hidden="true" />
           <span class="flex-1 text-[15px] font-medium">{{ $t('profile.rules') }}</span>
+          <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
+        </NuxtLink>
+        <NuxtLink to="/profile/notifications" class="flex min-h-12 items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <Bell class="size-5 flex-none text-slate-700" aria-hidden="true" />
+          <span class="flex-1 text-[15px] font-medium">{{ $t('profile.notifications') }}</span>
           <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </NuxtLink>
       </div>
