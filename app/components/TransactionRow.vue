@@ -14,6 +14,8 @@ defineEmits<{ select: [] }>()
 
 const { data: tree } = useCategoriesQuery()
 const row = computed(() => transactionRowCategory(props.transaction, tree.value))
+// Uncategorized (even partly): amber, the row to act on; else the budget / savings color.
+const tint = computed(() => categoryTint(row.value.main, tree.value))
 const hasCategory = computed(() => categorizationStatus(props.transaction, tree.value).kind !== 'none')
 const cents = computed(() => toCents(props.transaction.amount))
 
@@ -57,9 +59,15 @@ const accountLabel = computed(() =>
       v-else
       aria-hidden="true"
       class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
-      :class="row.uncategorized ? 'bg-amber-50' : 'bg-slate-100'"
+      :class="row.uncategorized ? 'bg-amber-50' : tint.tile.class"
+      :style="row.uncategorized ? undefined : tint.tile.style"
     >
-      <component :is="row.icon" class="size-5" :class="row.uncategorized ? 'text-amber-700' : 'text-slate-700'" />
+      <component
+        :is="row.icon"
+        class="size-5"
+        :class="row.uncategorized ? 'text-amber-700' : tint.icon.class"
+        :style="row.uncategorized ? undefined : tint.icon.style"
+      />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="truncate text-[15px] font-medium">{{ transaction.description }}</span>

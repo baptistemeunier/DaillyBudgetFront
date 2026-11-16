@@ -130,7 +130,13 @@ async function submitCreate() {
           :disabled="isDisabled(node.iri)"
           @click="emit('pick', node.iri)"
         >
-          <component :is="node.icon" class="size-5 flex-none text-slate-600" aria-hidden="true" />
+          <component
+            :is="node.icon"
+            class="size-5 flex-none"
+            :class="categoryTint(node, tree).icon.class"
+            :style="categoryTint(node, tree).icon.style"
+            aria-hidden="true"
+          />
           <span class="flex-1 text-[15px]">{{ node.fullLabel }}</span>
           <Check v-if="isSelected(node.iri)" class="size-5 text-indigo-600" :aria-label="$t('common.selectedCategory')" />
         </button>
@@ -150,8 +156,18 @@ async function submitCreate() {
 
       <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
         <li class="flex min-h-14 items-center gap-3 bg-slate-50 px-4">
-          <span class="flex size-9 flex-none items-center justify-center rounded-full bg-white" aria-hidden="true">
-            <component :is="openRoot.icon" class="size-5 text-slate-700" />
+          <span
+            class="flex size-9 flex-none items-center justify-center rounded-full"
+            :class="categoryTint(openRoot, tree).tile.class"
+            :style="categoryTint(openRoot, tree).tile.style"
+            aria-hidden="true"
+          >
+            <component
+              :is="openRoot.icon"
+              class="size-5"
+              :class="categoryTint(openRoot, tree).icon.class"
+              :style="categoryTint(openRoot, tree).icon.style"
+            />
           </span>
           <span class="text-[15px] font-semibold">{{ openRoot.label }}</span>
         </li>
@@ -166,7 +182,12 @@ async function submitCreate() {
             @click="emit('pick', child.iri)"
           >
             <span class="flex size-9 flex-none items-center justify-center" aria-hidden="true">
-              <component :is="child.icon" class="size-5 text-slate-500" />
+              <component
+                :is="child.icon"
+                class="size-5"
+                :class="categoryTint(child, tree).icon.class"
+                :style="categoryTint(child, tree).icon.style"
+              />
             </span>
             <span class="flex-1 text-[15px]">{{ child.label }}</span>
             <Check v-if="isSelected(child.iri)" class="size-5 text-indigo-600" :aria-label="$t('common.selectedCategory')" />
@@ -242,8 +263,18 @@ async function submitCreate() {
           class="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-slate-50 disabled:opacity-40"
           @click="onRoot(root)"
         >
-          <span class="flex size-9 flex-none items-center justify-center rounded-full bg-slate-100" aria-hidden="true">
-            <component :is="root.icon" class="size-5 text-slate-700" />
+          <span
+            class="flex size-9 flex-none items-center justify-center rounded-full"
+            :class="categoryTint(root, tree).tile.class"
+            :style="categoryTint(root, tree).tile.style"
+            aria-hidden="true"
+          >
+            <component
+              :is="root.icon"
+              class="size-5"
+              :class="categoryTint(root, tree).icon.class"
+              :style="categoryTint(root, tree).icon.style"
+            />
           </span>
           <span class="flex-1 text-[15px] font-medium">{{ root.label }}</span>
           <Check

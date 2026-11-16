@@ -3,6 +3,8 @@
 // Roots without a slot fold into "Autres"; three slots are below 3:1 on white,
 // so the chart always comes with the named list (direct labels).
 
+import type { CategoryNode, CategoryTree } from '~/utils/categories'
+
 const SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
 
 const SLOT_BY_CODE: Record<string, number> = {
@@ -26,6 +28,34 @@ export const UNCATEGORIZED_COLOR = '#cfcdc6'
 export function categoryColor(code: string | null): string | null {
   const slot = code ? SLOT_BY_CODE[code] : undefined
   return slot === undefined ? null : SLOTS[slot]!
+}
+
+type Look = { class?: string; style?: Record<string, string> }
+
+/** Colors of a category icon: on its round tile, or alone. */
+export interface CategoryTint {
+  tile: Look
+  icon: Look
+}
+
+const NEUTRAL_TINT: CategoryTint = { tile: { class: 'bg-slate-100' }, icon: { class: 'text-slate-700' } }
+
+/**
+ * Same colors as the budget and savings screens: an envelope keeps its savings color,
+ * an expense / income category takes its root's chart color (gray "Autres" without one),
+ * the rest (transfers, saving root, unknown) stays neutral.
+ */
+export function categoryTint(node: CategoryNode | null | undefined, tree: CategoryTree | undefined): CategoryTint {
+  if (!node) return NEUTRAL_TINT
+  if (node.type === 'saving') {
+    if (!node.parentIri) return NEUTRAL_TINT
+    const c = envelopeColor(node.iri)
+    return { tile: { class: c.tile }, icon: { class: c.icon } }
+  }
+  if (node.type !== 'expense' && node.type !== 'income') return NEUTRAL_TINT
+  const root = (node.parentIri && tree?.byIri.get(node.parentIri)) || node
+  const color = categoryColor(root.code) ?? OTHER_COLOR
+  return { tile: { style: { backgroundColor: `${color}26` } }, icon: { style: { color } } }
 }
 
 /** Bar color of spending against a budget: indigo < 80 %, amber up to 100 %, rose beyond. */

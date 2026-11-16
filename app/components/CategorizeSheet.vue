@@ -434,7 +434,9 @@ function onBackdropClick(event: MouseEvent) {
                 >
                   <component
                     :is="(line.category && tree.byIri.get(line.category)?.icon) || UNCATEGORIZED_ICON"
-                    class="size-5 flex-none text-slate-600"
+                    class="size-5 flex-none"
+                    :class="line.category ? categoryTint(tree.byIri.get(line.category), tree).icon.class : 'text-slate-600'"
+                    :style="line.category ? categoryTint(tree.byIri.get(line.category), tree).icon.style : undefined"
                     aria-hidden="true"
                   />
                   <span class="truncate text-[15px]" :class="line.category ? 'font-medium' : 'text-slate-500'">

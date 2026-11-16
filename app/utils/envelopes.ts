@@ -24,15 +24,17 @@ export function suggestEnvelopeIcon(name: string): string {
 export interface EnvelopeColor {
   tile: string
   bar: string
+  /** Icon alone, without its tile. */
+  icon: string
 }
 
 const COLORS: EnvelopeColor[] = [
-  { tile: 'bg-sky-100 text-sky-700', bar: 'bg-sky-500' },
-  { tile: 'bg-teal-100 text-teal-700', bar: 'bg-teal-500' },
-  { tile: 'bg-indigo-100 text-indigo-700', bar: 'bg-indigo-500' },
-  { tile: 'bg-rose-100 text-rose-700', bar: 'bg-rose-500' },
-  { tile: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500' },
-  { tile: 'bg-violet-100 text-violet-700', bar: 'bg-violet-500' },
+  { tile: 'bg-sky-100 text-sky-700', bar: 'bg-sky-500', icon: 'text-sky-700' },
+  { tile: 'bg-teal-100 text-teal-700', bar: 'bg-teal-500', icon: 'text-teal-700' },
+  { tile: 'bg-indigo-100 text-indigo-700', bar: 'bg-indigo-500', icon: 'text-indigo-700' },
+  { tile: 'bg-rose-100 text-rose-700', bar: 'bg-rose-500', icon: 'text-rose-700' },
+  { tile: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500', icon: 'text-amber-700' },
+  { tile: 'bg-violet-100 text-violet-700', bar: 'bg-violet-500', icon: 'text-violet-700' },
 ]
 
 export function envelopeColor(iri: string): EnvelopeColor {

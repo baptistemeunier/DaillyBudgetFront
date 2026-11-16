@@ -156,6 +156,8 @@ export interface TransactionRowCategory {
   label: string
   /** Still something to categorize (nothing or only part of the amount). */
   uncategorized: boolean
+  /** Category of the biggest split (gives the icon color). */
+  main: CategoryNode | null
 }
 
 /** Icon + label shown on a transaction row. */
@@ -163,16 +165,17 @@ export function transactionRowCategory(t: Transaction, tree: CategoryTree | unde
   const status = categorizationStatus(t, tree)
   switch (status.kind) {
     case 'none':
-      return { icon: UNCATEGORIZED_ICON, label: i18nT('categories.uncategorized'), uncategorized: true }
+      return { icon: UNCATEGORIZED_ICON, label: i18nT('categories.uncategorized'), uncategorized: true, main: null }
     case 'partial':
       return {
         icon: status.main?.icon ?? UNCATEGORIZED_ICON,
         label: i18nT('categories.partial', { amount: formatCents(Math.abs(status.remainingCents), t.currency) }),
         uncategorized: true,
+        main: status.main,
       }
     case 'single':
-      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: status.main?.label ?? i18nT('common.category'), uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: status.main?.label ?? i18nT('common.category'), uncategorized: false, main: status.main }
     case 'split':
-      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: i18nT('categories.split', { n: status.count }), uncategorized: false }
+      return { icon: status.main?.icon ?? DEFAULT_CATEGORY_ICON, label: i18nT('categories.split', { n: status.count }), uncategorized: false, main: status.main }
   }
 }
