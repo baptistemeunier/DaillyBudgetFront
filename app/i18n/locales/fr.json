@@ -256,6 +256,10 @@
     "namePlaceholder": "Nom"
   },
   "transfer": {
+    "splitEnvelopes": "Répartir sur plusieurs enveloppes",
+    "singleEnvelope": "Une seule enveloppe",
+    "envelopesIn": "Dans quelles enveloppes va cet argent ({account}) ?",
+    "envelopesOut": "De quelles enveloppes sort cet argent ({account}) ?",
     "savingGroup": "Épargne et placements",
     "changeEnvelope": "Changer d'enveloppe",
     "changeAccount": "Changer de compte",

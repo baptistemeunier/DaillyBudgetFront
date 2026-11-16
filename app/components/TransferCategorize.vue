@@ -4,7 +4,8 @@
 // - savings / investment account -> then pick the envelope (a sub-category of the saving root: the API refuses
 //   a root), full amount. A manual account gets the mirror transaction (counterpartAccount);
 //   in another currency, the received amount is asked last.
-import { Check, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+//   Same currency: "Répartir sur plusieurs enveloppes" gives one split (and one mirror) per envelope.
+import { Check, ChevronLeft, ChevronRight, Split } from 'lucide-vue-next'
 import type { SplitInput } from '~/composables/useBankingQueries'
 import type { Account, Transaction } from '~/types/api'
 import type { CategoryTree } from '~/utils/categories'
@@ -45,13 +46,20 @@ const currentEnvelope = computed(() =>
   splits.value.map(splitCategoryIri).find((i) => !!i && props.tree.byIri.get(i)?.type === 'saving'),
 )
 const currentLabel = computed(() => {
-  if (currentAccount.value) return null
-  const iri = splits.value.map(splitCategoryIri).find((i) => {
-    const type = i ? props.tree.byIri.get(i)?.type : undefined
-    return type === 'transfer' || type === 'saving'
-  })
-  return iri ? props.tree.byIri.get(iri)?.fullLabel : null
+  if (currentAccount.value && savingSplits.value.length < 2) return null
+  const labels = splits.value
+    .map(splitCategoryIri)
+    .map((i) => (i ? props.tree.byIri.get(i) : undefined))
+    .filter((n) => n?.type === 'transfer' || n?.type === 'saving')
+    .map((n) => (savingSplits.value.length > 1 ? n!.label : n!.fullLabel))
+  return labels.length ? labels.join(', ') : null
 })
+const savingSplits = computed(() =>
+  splits.value.filter((s) => {
+    const iri = splitCategoryIri(s)
+    return !!iri && props.tree.byIri.get(iri)?.type === 'saving'
+  }),
+)
 
 /** Manual account in another currency: the amount received there is required. */
 const otherCurrency = (a: Account) =>
@@ -63,13 +71,34 @@ const envelope = ref<string | null>(null)
 const received = ref('')
 const receivedCents = computed(() => parseAmountInput(received.value))
 const converting = computed(() => (chosen.value && envelope.value && otherCurrency(chosen.value) ? chosen.value : null))
+
+// Several envelopes (same currency only: one received amount per envelope isn't asked).
+const multi = ref(false)
+const absAmount = computed(() => Math.abs(amountCents.value))
+const { lines, picking, remaining, usedIris, lineErrors, isValid, reset, addLine, removeLine, pickForLine, toSplits } =
+  useSplitLines(absAmount)
+
 watch(
   () => props.transaction,
   () => {
     chosen.value = null
     envelope.value = null
+    multi.value = false
+    reset()
   },
 )
+
+function startMulti() {
+  multi.value = true
+  reset()
+  addLine()
+}
+
+function saveMulti() {
+  const a = chosen.value
+  if (!a || !isValid.value || !lines.value.length || props.pending) return
+  emit('save', toSplits(sign.value, a.manual ? { counterpartAccount: a._links.self.href } : {}))
+}
 
 function pickAccount(a: Account) {
   if (props.pending || !canPick(a)) return
@@ -80,6 +109,10 @@ function pickAccount(a: Account) {
   chosen.value = a
   envelope.value = null
   received.value = ''
+  // Already spread over several envelopes (of this account): reopen the lines.
+  multi.value = savingSplits.value.length > 1 && (!currentAccount.value || currentAccount.value === a._links.self.href)
+  if (multi.value) reset(savingSplits.value.map((s) => ({ category: splitCategoryIri(s), cents: toCents(s.amount) })))
+  else reset()
 }
 
 function pickEnvelope(iri: string) {
@@ -148,6 +181,76 @@ function saveConverted() {
     </button>
   </form>
 
+  <!-- Several envelopes: category of a line -->
+  <div v-else-if="chosen && multi && picking !== null" class="flex flex-col gap-3">
+    <button
+      type="button"
+      class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+      @click="picking = null"
+    >
+      <ChevronLeft class="size-5" aria-hidden="true" /> {{ $t('common.back') }}
+    </button>
+    <CategoryPicker
+      :tree="tree"
+      :types="['saving']"
+      :selected="lines[picking]?.category ? [lines[picking]!.category!] : []"
+      :disabled="usedIris"
+      @pick="pickForLine"
+    />
+  </div>
+
+  <!-- Several envelopes: lines -->
+  <div v-else-if="chosen && multi" class="flex flex-col gap-3">
+    <button
+      type="button"
+      class="-ml-1 flex min-h-11 items-center gap-1 self-start rounded-full pr-3 pl-1 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+      @click="chosen = null"
+    >
+      <ChevronLeft class="size-5" aria-hidden="true" /> {{ $t('transfer.changeAccount') }}
+    </button>
+    <p class="text-sm text-slate-600">
+      {{ $t(outgoing ? 'transfer.envelopesIn' : 'transfer.envelopesOut', { account: accountName(chosen) }) }}
+    </p>
+    <div>
+      <SplitLineList
+        v-model="lines"
+        :tree="tree"
+        :errors="lineErrors"
+        @pick="picking = $event"
+        @remove="removeLine"
+        @add="addLine"
+      />
+    </div>
+    <div class="flex items-center justify-between gap-3">
+      <p class="text-[13px]" aria-live="polite">
+        <span v-if="remaining < 0" class="font-semibold text-rose-700">
+          {{ $t('categorize.over', { amount: formatCents(-remaining, transaction.currency) }) }}
+        </span>
+        <template v-else>
+          <span class="text-slate-500">{{ $t('categorize.uncategorizedRemaining') }} </span>
+          <span class="font-semibold tabular-nums" :class="remaining === 0 ? 'text-emerald-700' : 'text-amber-700'">
+            {{ formatCents(remaining, transaction.currency) }}
+          </span>
+        </template>
+      </p>
+      <button
+        type="button"
+        class="min-h-11 flex-none rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white disabled:opacity-40"
+        :disabled="!isValid || !lines.length || pending"
+        @click="saveMulti"
+      >
+        {{ pending ? $t('common.saving') : $t('common.save') }}
+      </button>
+    </div>
+    <button
+      type="button"
+      class="min-h-11 self-center rounded-full px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+      @click="multi = false"
+    >
+      {{ $t('transfer.singleEnvelope') }}
+    </button>
+  </div>
+
   <!-- Envelope of the savings account -->
   <div v-else-if="chosen" class="flex flex-col gap-3">
     <button
@@ -167,6 +270,14 @@ function saveConverted() {
       :busy="pending"
       @pick="pickEnvelope"
     />
+    <button
+      v-if="!otherCurrency(chosen)"
+      type="button"
+      class="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 text-sm font-semibold text-indigo-700"
+      @click="startMulti"
+    >
+      <Split class="size-5" aria-hidden="true" /> {{ $t('transfer.splitEnvelopes') }}
+    </button>
   </div>
 
   <!-- Other account -->

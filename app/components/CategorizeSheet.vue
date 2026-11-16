@@ -5,7 +5,7 @@
 // Transfert: to / from another account (transfer or saving categories, see TransferCategorize).
 // Bulk (`transactions`): simple mode only, the picked category is applied to each one.
 // "Toujours pour <merchant>" switch (simple mode): also saves the rule merchant → category (rememberCategory).
-import { ChevronLeft, Plus, Trash2, X } from 'lucide-vue-next'
+import { ChevronLeft, X } from 'lucide-vue-next'
 import type { SplitInput } from '~/composables/useBankingQueries'
 import type { CategoryType, Transaction } from '~/types/api'
 
@@ -30,17 +30,8 @@ const { data: accounts } = useAllAccountsQuery()
 const accountOf = (tr: Transaction) => accounts.value?.find((a) => a._links.self.href === tr._links.account?.href)
 const accountTypeOf = (tr: Transaction) => accountOf(tr)?.type ?? null
 
-interface Line {
-  key: number
-  category: string | null
-  input: string // positive amount typed by the user ("12,50")
-}
-
 const mode = ref<'simple' | 'split' | 'transfer'>('simple')
-const lines = ref<Line[]>([])
-const picking = ref<number | null>(null) // index of the split line choosing its category
 const error = ref<string | null>(null)
-let nextKey = 0
 
 const t = computed(() => props.transaction ?? null)
 const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
@@ -69,6 +60,8 @@ const bulkTotal = computed(() => {
 const amountCents = computed(() => (t.value ? toCents(t.value.amount) : 0))
 const types = computed(() => (t.value ? allowedTypes(amountCents.value, accountTypeOf(t.value)) : []))
 const absAmount = computed(() => Math.abs(amountCents.value))
+const { lines, picking, remaining, usedIris, lineErrors, isValid, reset, addLine, removeLine, pickForLine, toSplits } =
+  useSplitLines(absAmount)
 const sign = computed(() => (amountCents.value < 0 ? -1 : 1))
 const currency = computed(() => t.value?.currency ?? 'EUR')
 
@@ -82,34 +75,12 @@ const currentIris = computed(() =>
   (t.value?.splits ?? []).map(splitCategoryIri).filter((i): i is string => !!i),
 )
 
-const parseInput = parseAmountInput
-
-const allocated = computed(() => lines.value.reduce((sum, l) => sum + (parseInput(l.input) ?? 0), 0))
-const remaining = computed(() => absAmount.value - allocated.value)
-
-const usedIris = computed(() => lines.value.map((l) => l.category).filter((c): c is string => !!c))
-
-const lineErrors = computed(() =>
-  lines.value.map((l) => {
-    const cents = parseInput(l.input)
-    if (!l.category) return i18n.t('categorize.chooseCategoryError')
-    if (cents === null || cents === 0) return i18n.t('common.invalidAmount')
-    return null
-  }),
-)
-
-const canSave = computed(
-  () =>
-    !update.isPending.value &&
-    remaining.value >= 0 &&
-    lineErrors.value.every((e) => e === null) &&
-    new Set(usedIris.value).size === usedIris.value.length,
-)
+const canSave = computed(() => !update.isPending.value && isValid.value)
 
 // (Re)initialise when a transaction (or a bulk selection) is opened.
 watch([t, bulk], ([transaction, items]) => {
   error.value = null
-  picking.value = null
+  reset()
   remember.value = false
   if (!transaction && !items) {
     dialog.value?.close()
@@ -118,7 +89,6 @@ watch([t, bulk], ([transaction, items]) => {
 
   if (!transaction) {
     mode.value = 'simple'
-    lines.value = []
     nextTick(() => {
       if (!dialog.value?.open) dialog.value?.showModal()
     })
@@ -126,11 +96,6 @@ watch([t, bulk], ([transaction, items]) => {
   }
 
   const splits = transaction.splits ?? []
-  lines.value = splits.map((s) => ({
-    key: nextKey++,
-    category: splitCategoryIri(s),
-    input: centsToInput(Math.abs(toCents(s.amount)), true),
-  }))
   const status = categorizationStatus(transaction, tree.value)
   // Transfert tab: a transfer, or a saving towards another account (with a mirror, or from a checking account).
   const savingAccount = accountTypeOf(transaction) !== null && accountTypeOf(transaction) !== 'checking'
@@ -142,27 +107,12 @@ watch([t, bulk], ([transaction, items]) => {
   })
   mode.value = isTransfer ? 'transfer' : status.kind === 'split' || status.kind === 'partial' ? 'split' : 'simple'
   // Transfer / saving lines aren't editable in Ventiler.
-  if (isTransfer) lines.value = []
+  if (!isTransfer) reset(splits.map((s) => ({ category: splitCategoryIri(s), cents: toCents(s.amount) })))
 
   nextTick(() => {
     if (!dialog.value?.open) dialog.value?.showModal()
   })
 })
-
-function addLine() {
-  lines.value.push({ key: nextKey++, category: null, input: remaining.value > 0 ? centsToInput(remaining.value, true) : '' })
-  picking.value = lines.value.length - 1
-}
-
-function removeLine(index: number) {
-  lines.value.splice(index, 1)
-}
-
-function pickForLine(iri: string) {
-  if (picking.value === null) return
-  lines.value[picking.value]!.category = iri
-  picking.value = null
-}
 
 function errorMessage(e: unknown): string {
   if (apiErrorStatus(e) === 403) return i18n.t('errors.forbiddenTransaction')
@@ -208,12 +158,7 @@ async function pickBulk(iri: string) {
 
 function saveSplit() {
   if (!canSave.value) return
-  save(
-    lines.value.map((l) => ({
-      category: l.category!,
-      amount: centsToDecimal(sign.value * (parseInput(l.input) ?? 0)),
-    })),
-  )
+  save(toSplits(sign.value))
 }
 
 function onBackdropClick(event: MouseEvent) {
@@ -420,61 +365,14 @@ function onBackdropClick(event: MouseEvent) {
 
         <!-- Ventiler -->
         <template v-else>
-          <ul class="flex flex-col gap-2">
-            <li
-              v-for="(line, index) in lines"
-              :key="line.key"
-              class="flex flex-col gap-1 rounded-2xl border border-slate-200 p-2"
-            >
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left hover:bg-slate-50"
-                  @click="picking = index"
-                >
-                  <component
-                    :is="(line.category && tree.byIri.get(line.category)?.icon) || UNCATEGORIZED_ICON"
-                    class="size-5 flex-none"
-                    :class="line.category ? categoryTint(tree.byIri.get(line.category), tree).icon.class : 'text-slate-600'"
-                    :style="line.category ? categoryTint(tree.byIri.get(line.category), tree).icon.style : undefined"
-                    aria-hidden="true"
-                  />
-                  <span class="truncate text-[15px]" :class="line.category ? 'font-medium' : 'text-slate-500'">
-                    {{ line.category ? (tree.byIri.get(line.category)?.fullLabel ?? $t('common.category')) : $t('categorize.chooseCategory') }}
-                  </span>
-                </button>
-                <label class="relative w-28 flex-none">
-                  <span class="sr-only">{{ $t('common.amount') }}</span>
-                  <input
-                    v-model="line.input"
-                    inputmode="decimal"
-                    :placeholder="$t('common.amountPlaceholder')"
-                    class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-7 pl-3 text-right text-[15px] tabular-nums outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                  />
-                  <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-slate-500">€</span>
-                </label>
-                <button
-                  type="button"
-                  class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-700"
-                  :aria-label="$t('categorize.removeLine')"
-                  @click="removeLine(index)"
-                >
-                  <Trash2 class="size-5" />
-                </button>
-              </div>
-              <p v-if="lineErrors[index] && (line.category || line.input)" class="px-2 text-xs text-rose-700">
-                {{ lineErrors[index] }}
-              </p>
-            </li>
-          </ul>
-
-          <button
-            type="button"
-            class="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 text-sm font-semibold text-indigo-700"
-            @click="addLine"
-          >
-            <Plus class="size-5" aria-hidden="true" /> {{ $t('categorize.addLine') }}
-          </button>
+          <SplitLineList
+            v-model="lines"
+            :tree="tree"
+            :errors="lineErrors"
+            @pick="picking = $event"
+            @remove="removeLine"
+            @add="addLine"
+          />
         </template>
       </div>
 
