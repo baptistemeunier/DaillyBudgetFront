@@ -62,7 +62,7 @@ const rows = computed<StatementRowView[]>(() => {
       count: (isExpenses.value ? s.uncategorizedCount : s.uncategorizedIncomeCount) ?? 0,
       percent: null,
       currency: currency.value,
-      to: '/transactions/to-categorize?accounts=checking',
+      to: { path: '/transactions/to-categorize', query: { accounts: 'checking', period: period.value } },
     })
   }
 

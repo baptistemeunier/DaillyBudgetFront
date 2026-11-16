@@ -224,11 +224,17 @@ export function useTransactionsQuery(id: MaybeRefOrGetter<string>) {
   })
 }
 
-/** Every transaction not fully categorized, all accounts together or only checking / savings ones, page by page. */
-export function useUncategorizedTransactionsQuery(scope: MaybeRefOrGetter<AccountScope | null> = null) {
+/**
+ * Every transaction not fully categorized, all accounts together or only checking / savings ones,
+ * optionally booked over a period ("2026-11" or "2026-09..2026-11"), page by page.
+ */
+export function useUncategorizedTransactionsQuery(
+  scope: MaybeRefOrGetter<AccountScope | null> = null,
+  period: MaybeRefOrGetter<string | null> = null,
+) {
   const api = useApi()
   return useInfiniteQuery({
-    queryKey: ['transactions', 'uncategorized', computed(() => toValue(scope))],
+    queryKey: ['transactions', 'uncategorized', computed(() => toValue(scope)), computed(() => toValue(period))],
     // Refetched on each visit: rows categorized last time are gone.
     staleTime: 0,
     initialPageParam: '',
@@ -237,6 +243,12 @@ export function useUncategorizedTransactionsQuery(scope: MaybeRefOrGetter<Accoun
       const query = new URLSearchParams({ uncategorized: 'true', page: '1' })
       const s = toValue(scope)
       for (const type of s ? ACCOUNT_SCOPES[s].types : []) query.append('accountType[]', type)
+      const p = toValue(period)
+      if (p) {
+        const { after, strictlyBefore } = periodBounds(p)
+        query.set('bookingAt[after]', after)
+        query.set('bookingAt[strictly_before]', strictlyBefore)
+      }
       return api<HalCollection<Transaction>>(`/transactions?${query}`)
     },
     getNextPageParam: (last) => last._links.next?.href,

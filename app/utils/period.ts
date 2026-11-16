@@ -52,6 +52,21 @@ export function periodLabel(to: string, months: number): string {
   return `${capitalize(fromLabel)} – ${toLabel}`
 }
 
+/** "2026-11" / "2026-09..2026-11", as carried in a URL; anything else -> null. */
+export function parsePeriod(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const m = /^(\d{4}-(?:0[1-9]|1[0-2]))(?:\.\.(\d{4}-(?:0[1-9]|1[0-2])))?$/.exec(value)
+  if (!m) return null
+  return !m[2] || m[1]! <= m[2] ? value : null
+}
+
+/** API period -> its label ("Novembre 2026", "Sept. – nov. 2026"). */
+export function periodLabelOf(period: string): string {
+  const [from, to = from] = period.split('..') as [string, string?]
+  const months = (Number(to!.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to!.slice(5, 7)) - Number(from.slice(5, 7)) + 1
+  return periodLabel(to!, months)
+}
+
 /** Days left in the current month (today included) when the period ends this month, else null. */
 export function daysLeft(to: string, now = new Date()): number | null {
   const today = dayKey(now)

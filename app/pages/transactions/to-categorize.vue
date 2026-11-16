@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Every transaction not fully categorized, all accounts together, or only the checking accounts
-// (?accounts=checking, from the budget) or the savings ones (?accounts=savings, from the savings tab).
+// (?accounts=checking, from the budget, with its ?period) or the savings ones (?accounts=savings, from the savings tab).
 // A row categorized here stays in the list (with its new label) until the next reload,
 // so the list doesn't jump under the finger.
 // Selection mode: tick several rows and give them one category at once (bulk sheet).
@@ -10,6 +10,8 @@ import type { Transaction } from '~/types/api'
 const router = useRouter()
 const route = useRoute()
 const scope = computed(() => (isAccountScope(route.query.accounts) ? route.query.accounts : null))
+// ?period=2026-09..2026-11 (from the budget): only the transactions booked over that period.
+const period = computed(() => parsePeriod(route.query.period))
 
 const {
   data: pages,
@@ -20,7 +22,7 @@ const {
   hasNextPage,
   fetchNextPage,
   refetch,
-} = useUncategorizedTransactionsQuery(scope)
+} = useUncategorizedTransactionsQuery(scope, period)
 
 const { data: tree } = useCategoriesQuery()
 const groups = useDayGroups(pages)
@@ -128,6 +130,7 @@ function back() {
               ·
             </template>
             {{ scope ? accountScopeLabel(scope) : $t('toCategorize.allAccounts') }}
+            <template v-if="period">· {{ periodLabelOf(period) }}</template>
           </p>
         </div>
         <template v-if="selecting">
