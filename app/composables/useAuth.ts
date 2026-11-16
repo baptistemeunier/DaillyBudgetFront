@@ -113,7 +113,12 @@ export function useAuth() {
 
   async function refresh(): Promise<string | null> {
     const refreshToken = tokens.value?.refreshToken
-    if (!refreshToken) return null
+    // Expired without a way to renew it: forget it, or isAuthenticated stays true and every page
+    // (the OAuth callback included) sends back to the login, cutting the code exchange in progress.
+    if (!refreshToken) {
+      logout()
+      return null
+    }
 
     refreshing ??= $fetch<TokenResponse>('/api/oauth/token', {
       method: 'POST',

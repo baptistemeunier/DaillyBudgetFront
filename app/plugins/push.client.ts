@@ -17,11 +17,15 @@ export default defineNuxtPlugin({
     }))
 
     // Only once logged in: the API calls would otherwise send to the login page.
+    // Not on the OAuth callback: the code exchange runs there (the login watch below resyncs right after).
     const resync = () => {
-      if (auth.isAuthenticated.value) push.resync()
+      if (auth.isAuthenticated.value && router.currentRoute.value.path !== '/auth/callback') push.resync()
     }
     nuxtApp.hook('app:mounted', resync)
     watch(auth.isAuthenticated, resync)
+    router.afterEach((_to, from) => {
+      if (from.path === '/auth/callback') resync()
+    })
     watch((nuxtApp.$i18n as unknown as Composer).locale, resync)
 
     // The initial navigation may be seen by both isReady() and afterEach: each id is handled once.
