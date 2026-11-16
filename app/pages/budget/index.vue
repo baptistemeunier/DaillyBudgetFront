@@ -50,9 +50,12 @@ const rows = computed<StatementRowView[]>(() => {
     })
   }
 
+  result.sort((a, b) => b.cents - a.cents)
+
+  // Uncategorized first, whatever its amount: it's the row to act on.
   const uncategorized = toCents(isExpenses.value ? s.uncategorizedAmount : s.uncategorizedIncomeAmount)
   if (uncategorized > 0) {
-    result.push({
+    result.unshift({
       key: 'uncategorized',
       icon: UNCATEGORIZED_ICON,
       label: t('categories.uncategorized'),
@@ -66,7 +69,7 @@ const rows = computed<StatementRowView[]>(() => {
     })
   }
 
-  return result.sort((a, b) => b.cents - a.cents)
+  return result
 })
 
 // Categories without a chart color fold into one "Other" segment.
