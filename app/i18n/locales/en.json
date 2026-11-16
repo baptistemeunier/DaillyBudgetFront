@@ -255,6 +255,11 @@
     "subName": "Sub-category name",
     "namePlaceholder": "Name"
   },
+  "hide": {
+    "label": "Hide from the budget",
+    "hint": "Stays in the list and the balance, left out of the budget",
+    "hiddenShort": "Hidden"
+  },
   "transfer": {
     "splitEnvelopes": "Split across several envelopes",
     "singleEnvelope": "A single envelope",

@@ -342,6 +342,26 @@ export function useUpdateSplits() {
   })
 }
 
+/** Hides a transaction from the budget (still listed, still in the balance), or shows it again. */
+export function useHideTransaction() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ transaction, hidden }: { transaction: Transaction; hidden: boolean }) =>
+      api<Transaction>(transaction._links.self.href, {
+        method: 'PATCH',
+        body: { hidden },
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['user_actions'] })
+      queryClient.invalidateQueries({ queryKey: ['statement'] })
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
+      patchCachedTransaction(queryClient, updated)
+    },
+  })
+}
+
 /**
  * Confirms the splits set by a rule (source "rule" → "confirmed", still linked to the rule).
  * The API answers 422 when the transaction has no split set by a rule.

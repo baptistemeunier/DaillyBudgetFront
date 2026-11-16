@@ -5,7 +5,7 @@
 // Transfert: to / from another account (transfer or saving categories, see TransferCategorize).
 // Bulk (`transactions`): simple mode only, the picked category is applied to each one.
 // "Toujours pour <merchant>" switch (simple mode): also saves the rule merchant → category (rememberCategory).
-import { ChevronLeft, X } from 'lucide-vue-next'
+import { ChevronLeft, Eye, EyeOff, X } from 'lucide-vue-next'
 import type { SplitInput } from '~/composables/useBankingQueries'
 import type { CategoryType, Transaction } from '~/types/api'
 
@@ -24,6 +24,7 @@ const i18n = useI18n()
 const dialog = ref<HTMLDialogElement | null>(null)
 const { data: tree, isPending: treePending, isError: treeError, refetch: refetchTree } = useCategoriesQuery()
 const update = useUpdateSplits()
+const hide = useHideTransaction()
 
 // Type of the transaction's account: savings / investment accounts also take saving categories.
 const { data: accounts } = useAllAccountsQuery()
@@ -37,6 +38,19 @@ const t = computed(() => props.transaction ?? null)
 const bulk = computed(() => (props.transactions?.length ? props.transactions : null))
 const bulkPending = ref(false)
 const remember = ref(false)
+// Hidden from the budget (local copy: the sheet keeps the transaction it was opened with).
+const hidden = ref(false)
+
+async function toggleHidden() {
+  if (!t.value || hide.isPending.value) return
+  error.value = null
+  try {
+    const updated = await hide.mutateAsync({ transaction: t.value, hidden: !hidden.value })
+    hidden.value = !!updated.hidden
+  } catch (e) {
+    error.value = errorMessage(e)
+  }
+}
 
 // The API only remembers a merchant of a bank account (manual accounts have no rule).
 const canRemember = computed(() => !!t.value?.merchantKey && accountOf(t.value)?.manual === false)
@@ -82,6 +96,7 @@ watch([t, bulk], ([transaction, items]) => {
   error.value = null
   reset()
   remember.value = false
+  hidden.value = !!transaction?.hidden
   if (!transaction && !items) {
     dialog.value?.close()
     return
@@ -251,6 +266,35 @@ function onBackdropClick(event: MouseEvent) {
         v-if="picking === null && detail"
         class="mx-4 mt-3 max-h-32 flex-none overflow-y-auto rounded-2xl bg-slate-50 px-3 py-2.5 text-[13px] break-words whitespace-pre-line text-slate-700"
       >{{ detail }}</p>
+
+      <!-- Hidden from the budget -->
+      <div v-if="picking === null" class="flex-none px-4 pt-3">
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="hidden"
+          class="flex min-h-12 w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-colors disabled:opacity-60"
+          :class="hidden ? 'border-slate-300 bg-slate-100' : 'border-slate-200 hover:bg-slate-50'"
+          :disabled="hide.isPending.value"
+          @click="toggleHidden"
+        >
+          <component :is="hidden ? EyeOff : Eye" class="size-5 flex-none text-slate-500" aria-hidden="true" />
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span class="text-[15px] font-medium">{{ $t('hide.label') }}</span>
+            <span class="text-[13px] text-slate-500">{{ $t('hide.hint') }}</span>
+          </span>
+          <span
+            class="relative h-6 w-10 flex-none rounded-full transition-colors"
+            :class="hidden ? 'bg-slate-600' : 'bg-slate-300'"
+            aria-hidden="true"
+          >
+            <span
+              class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform"
+              :class="hidden ? 'translate-x-4' : ''"
+            />
+          </span>
+        </button>
+      </div>
 
       <!-- Mode switch -->
       <div v-if="picking === null" class="flex-none px-4 pt-3">

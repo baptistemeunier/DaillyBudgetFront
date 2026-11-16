@@ -34,7 +34,7 @@ const remaining = computed(() => {
   if (total == null) return null
   const done = groups.value
     .flatMap((g) => g.items)
-    .filter((t) => !transactionRowCategory(t, tree.value).uncategorized).length
+    .filter((t) => t.hidden || !transactionRowCategory(t, tree.value).uncategorized).length
   return Math.max(0, total - done)
 })
 
@@ -46,7 +46,7 @@ const selection = ref(new Set<string>())
 const bulk = ref<Transaction[] | null>(null)
 
 const loaded = computed(() => groups.value.flatMap((g) => g.items))
-const isTodo = (t: Transaction) => transactionRowCategory(t, tree.value).uncategorized
+const isTodo = (t: Transaction) => !t.hidden && transactionRowCategory(t, tree.value).uncategorized
 const selectableItems = computed(() => loaded.value.filter(isTodo))
 const allSelected = computed(
   () => selectableItems.value.length > 0 && selectableItems.value.every((t) => selection.value.has(t._links.self.href)),

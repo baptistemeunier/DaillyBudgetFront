@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check } from 'lucide-vue-next'
+import { Check, EyeOff } from 'lucide-vue-next'
 import type { Transaction } from '~/types/api'
 
 const props = defineProps<{
@@ -18,6 +18,9 @@ const row = computed(() => transactionRowCategory(props.transaction, tree.value)
 const tint = computed(() => categoryTint(row.value.main, tree.value))
 const hasCategory = computed(() => categorizationStatus(props.transaction, tree.value).kind !== 'none')
 const cents = computed(() => toCents(props.transaction.amount))
+// Hidden from the budget: grayed row, and nothing left to categorize.
+const hidden = computed(() => !!props.transaction.hidden)
+const todo = computed(() => row.value.uncategorized && !hidden.value)
 
 // Account label (only when asked): the account list is cached, banks too.
 const { data: accounts } = useAllAccountsQuery()
@@ -37,7 +40,7 @@ const accountLabel = computed(() =>
   <button
     type="button"
     class="flex min-h-16 w-full items-center gap-3 px-3.5 py-2.5 text-left"
-    :class="selectable && selected ? 'bg-indigo-50' : 'hover:bg-slate-50'"
+    :class="selectable && selected ? 'bg-indigo-50' : hidden ? 'bg-slate-100 hover:bg-slate-200/70' : 'hover:bg-slate-50'"
     :role="selectable ? 'checkbox' : undefined"
     :aria-checked="selectable ? !!selected : undefined"
     :aria-haspopup="selectable ? undefined : 'dialog'"
@@ -59,29 +62,33 @@ const accountLabel = computed(() =>
       v-else
       aria-hidden="true"
       class="flex size-10 flex-none items-center justify-center rounded-full text-lg"
-      :class="row.uncategorized ? 'bg-amber-50' : tint.tile.class"
-      :style="row.uncategorized ? undefined : tint.tile.style"
+      :class="hidden ? 'bg-slate-200' : todo ? 'bg-amber-50' : tint.tile.class"
+      :style="hidden || todo ? undefined : tint.tile.style"
     >
       <component
-        :is="row.icon"
+        :is="hidden ? EyeOff : row.icon"
         class="size-5"
-        :class="row.uncategorized ? 'text-amber-700' : tint.icon.class"
-        :style="row.uncategorized ? undefined : tint.icon.style"
+        :class="hidden ? 'text-slate-500' : todo ? 'text-amber-700' : tint.icon.class"
+        :style="hidden || todo ? undefined : tint.icon.style"
       />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span class="truncate text-[15px] font-medium">{{ transaction.description }}</span>
+      <span class="truncate text-[15px] font-medium" :class="hidden ? 'text-slate-500' : ''">{{ transaction.description }}</span>
       <span v-if="showAccount" class="truncate text-[13px] text-slate-500">
         {{ accountLabel }}
         <template v-if="hasCategory">
-          · <span :class="row.uncategorized ? 'text-amber-700' : ''">{{ row.label }}</span>
+          · <span :class="todo ? 'text-amber-700' : ''">{{ row.label }}</span>
         </template>
+        <template v-if="hidden"> · {{ $t('hide.hiddenShort') }}</template>
       </span>
-      <span v-else class="truncate text-[13px]" :class="row.uncategorized ? 'text-amber-700' : 'text-slate-500'">
-        {{ row.label }}
+      <span v-else class="truncate text-[13px]" :class="todo ? 'text-amber-700' : 'text-slate-500'">
+        <template v-if="hidden">{{ $t('hide.hiddenShort') }} · </template>{{ row.label }}
       </span>
     </span>
-    <span class="flex-none text-[15px] font-semibold tabular-nums" :class="cents > 0 ? 'text-emerald-700' : 'text-slate-900'">
+    <span
+      class="flex-none text-[15px] font-semibold tabular-nums"
+      :class="hidden ? 'text-slate-400 line-through' : cents > 0 ? 'text-emerald-700' : 'text-slate-900'"
+    >
       {{ formatSignedCents(cents, transaction.currency) }}
     </span>
   </button>

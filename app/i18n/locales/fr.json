@@ -255,6 +255,11 @@
     "subName": "Nom de la sous-catégorie",
     "namePlaceholder": "Nom"
   },
+  "hide": {
+    "label": "Masquer du budget",
+    "hint": "Reste dans la liste et le solde, sans compter dans le budget",
+    "hiddenShort": "Masquée"
+  },
   "transfer": {
     "splitEnvelopes": "Répartir sur plusieurs enveloppes",
     "singleEnvelope": "Une seule enveloppe",

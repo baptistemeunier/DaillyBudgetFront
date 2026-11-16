@@ -73,6 +73,8 @@ export interface Transaction extends HalResource {
   isBooked: boolean
   /** Categorized when the sum equals `amount`; the difference is uncategorized. */
   splits?: TransactionSplit[]
+  /** Hidden by the user: still listed and in the balance, left out of the budget and of "to categorize". */
+  hidden?: boolean
   _links: HalResource['_links'] & { account?: HalLink }
 }
 
