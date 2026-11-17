@@ -162,6 +162,17 @@
     "soon": "Bientôt disponible",
     "confirm": "Supprimer la connexion"
   },
+  "bankConfigure": {
+    "title": "Connexion de la banque",
+    "success": "Banque connectée",
+    "discovering": "Recherche des comptes…",
+    "syncProgress": "Synchronisation en cours… ({done}/{total})",
+    "syncDone": "Tous les comptes sont synchronisés.",
+    "syncFailed": "{n} compte n'a pas pu être synchronisé. | {n} compte n'a pas pu être synchronisé. | {n} comptes n'ont pas pu être synchronisés.",
+    "accountSynced": "Synchronisé",
+    "noAccount": "Aucun compte trouvé pour l'instant. Ils apparaîtront à la prochaine synchronisation.",
+    "goHome": "Voir mes comptes"
+  },
   "banks": {
     "add": "Ajouter une banque",
     "chooseCountry": "Choisissez un pays",

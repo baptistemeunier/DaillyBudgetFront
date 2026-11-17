@@ -162,6 +162,17 @@
     "soon": "Coming soon",
     "confirm": "Delete connection"
   },
+  "bankConfigure": {
+    "title": "Bank connection",
+    "success": "Bank connected",
+    "discovering": "Looking for the accounts…",
+    "syncProgress": "Syncing… ({done}/{total})",
+    "syncDone": "All the accounts are synced.",
+    "syncFailed": "{n} account couldn't be synced. | {n} account couldn't be synced. | {n} accounts couldn't be synced.",
+    "accountSynced": "Synced",
+    "noAccount": "No account found yet. They will show up at the next sync.",
+    "goHome": "See my accounts"
+  },
   "banks": {
     "add": "Add a bank",
     "chooseCountry": "Choose a country",
