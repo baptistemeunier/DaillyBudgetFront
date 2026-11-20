@@ -1,75 +1,55 @@
-# Nuxt Minimal Starter
+# Daily Budget
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Personal budget web app: accounts overview, transaction categorization, monthly budget and savings tracking, push notifications.
 
-## Setup
+The app uses the [Daily Budget API](../dailyBudget).
 
-Make sure to install dependencies:
+## Features
+
+- **Overview**: balances of all accounts and the actions waiting for you (transactions to categorize or review, bank connections to renew).
+- **Banks**: connect a bank, manage your connections, and create manual savings or investment accounts.
+- **Transactions**: categorize transactions (including split ones), review those categorized automatically, hide a transaction from the budget, and manage categories and rules.
+- **Budget**: plan the month by category, then follow what has been spent in each one.
+- **Savings**: see the money set aside in each savings envelope.
+- **Notifications**: an inbox and Web Push alerts, with settings for each alert type.
+- **Installable PWA**, available in French and English.
+
+## Stack
+
+- Nuxt 4 as a SPA (no SSR) and Vue 3
+- Tailwind CSS 4, Lucide icons
+- TanStack Vue Query for API data
+- `@nuxtjs/i18n` (fr, en)
+- `@vite-pwa/nuxt` with a custom service worker (`service-worker/sw.ts`) that handles Web Push
+- MSW for API mocking
+
+The Nitro server (`server/`) does two things: it proxies `/api/**` to the API, and it exchanges the OAuth code for a token. Because of that, the client secret never reaches the browser.
+
+## Getting started
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+cp .env.example .env    # then fill in the values below
+npm run dev             # http://localhost:3000
 ```
 
-## Development Server
+### Configuration
 
-Start the development server on `http://localhost:3000`:
+| Variable | Purpose |
+|---|---|
+| `NUXT_API_BASE_URL` | API URL (server only) |
+| `NUXT_OAUTH_TOKEN_URL`, `NUXT_OAUTH_CLIENT_SECRET` | OAuth token endpoint and client secret (server only) |
+| `NUXT_PUBLIC_OAUTH_CLIENT_ID` | OAuth client id |
+| `NUXT_PUBLIC_OAUTH_AUTHORIZE_URL` | OAuth authorize URL |
+| `NUXT_PUBLIC_VAPID_PUBLIC_KEY` | VAPID public key of the API (Web Push) |
+| `NUXT_PUBLIC_API_MOCKING` | `true` to use the mocked API (MSW) instead of the real one |
+
+The service worker is turned off in dev. To test installing the app or push notifications, use a production build:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+npm run build && npm run preview
 ```
 
-## Production
+## Deployment
 
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+The `Dockerfile` builds a self-contained Node image that serves the app on port 3000. The production stack, with the API and the database, lives in the API repository (`compose.prod.yaml`, `bin/release.sh`).
