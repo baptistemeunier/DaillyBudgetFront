@@ -14,6 +14,9 @@ const { data: accounts, isPending: accountsPending, isError: accountsError, refe
 const bankName = computed(() => bank.value?.name ?? t('common.bank'))
 const expired = computed(() => ['EX', 'SU'].includes(props.connection.externalStatus))
 const configureHref = computed(() => props.connection._links.configure?.href)
+// Connections are shared: only their owner (the user who gave the bank consent) gets _links.delete,
+// and only they can reconnect or delete it.
+const owned = computed(() => !!props.connection._links.delete)
 const logoFailed = ref(false)
 
 // Expired access can't be renewed: start a new connection to the same bank.
@@ -24,7 +27,11 @@ function startReconnect() {
 
 // A linked or expired connection without any account is useless: offer to remove it.
 const removable = computed(
-  () => ['LN', 'EX'].includes(props.connection.externalStatus) && !accountsPending.value && !accounts.value?.length,
+  () =>
+    owned.value &&
+    ['LN', 'EX'].includes(props.connection.externalStatus) &&
+    !accountsPending.value &&
+    !accounts.value?.length,
 )
 const remove = useDeleteConnection()
 const removeOpen = ref(false)
@@ -110,6 +117,7 @@ const panelId = computed(() => `connection-${halId(props.connection)}`)
           <span v-if="reconnect.isError.value" class="block font-semibold">{{ $t('errors.reconnectFailed') }}</span>
         </span>
         <button
+          v-if="owned"
           type="button"
           class="inline-flex h-7 flex-none items-center gap-1 rounded-full bg-rose-600 px-2.5 text-xs font-semibold text-white disabled:opacity-60"
           :disabled="!bank || reconnect.isPending.value"

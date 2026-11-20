@@ -25,7 +25,11 @@ export interface AccountConnection extends HalResource {
   externalStatus: RequisitionStatus
   createdAt: string
   updatedAt: string
-  _links: HalResource['_links'] & { bank?: HalLink; accounts?: HalLink; configure?: HalLink }
+  /**
+   * Connections are shared: configure, sync and delete are only given to their owner (the user who gave the bank consent).
+   * An action link is present only when the user may do it.
+   */
+  _links: HalResource['_links'] & { bank?: HalLink; accounts?: HalLink; configure?: HalLink; sync?: HalLink; delete?: HalLink }
 }
 
 export interface Account extends HalResource {
@@ -107,7 +111,8 @@ export interface CategorizationRule extends HalResource {
   /** IRI, or only in _links depending on the HAL rendering — see ruleCategoryIri(). */
   category?: string | null
   createdAt?: string
-  _links: HalResource['_links'] & { category?: HalLink }
+  /** Rules are shared: delete only given to their owner. */
+  _links: HalResource['_links'] & { category?: HalLink; delete?: HalLink }
 }
 
 export interface CategorizationRuleInput {
@@ -128,7 +133,8 @@ export interface Category extends HalResource {
   /** Saving categories (envelopes) only: amount to reach, optionally by targetDate. */
   targetAmount?: string | null
   targetDate?: string | null
-  _links: HalResource['_links'] & { parent?: HalLink }
+  /** Categories are shared: edit for the users' ones (not system ones), delete only for their owner. */
+  _links: HalResource['_links'] & { parent?: HalLink; edit?: HalLink; delete?: HalLink }
 }
 
 /** Name and target of a saving envelope (POST / PATCH /categories). */

@@ -130,6 +130,7 @@
     "noConnection": "Sans connexion"
   },
   "connection": {
+    "sharedByOther": "Connexion ajoutée par un autre membre : seule cette personne peut la synchroniser, la reconnecter ou la supprimer.",
     "notFinalized": "La connexion n'est pas finalisée.",
     "expired": "L'accès bancaire a expiré.",
     "expiredFrozen": "L'accès bancaire a expiré. Soldes figés au {date}.",

@@ -22,6 +22,10 @@ const {
 const linked = computed(() => connection.value?.externalStatus === 'LN')
 const expired = computed(() => ['EX', 'SU'].includes(connection.value?.externalStatus ?? ''))
 const configureHref = computed(() => connection.value?._links.configure?.href)
+// Connections are shared: only their owner (the user who gave the bank consent) gets the action links
+// (_links.sync, _links.delete) and can sync, reconnect or delete it.
+const owned = computed(() => !!connection.value?._links.delete)
+const canSync = computed(() => linked.value && !!connection.value?._links.sync)
 
 // Synchronisation
 const sync = useSyncConnection()
@@ -102,6 +106,7 @@ async function confirmRemove() {
           <span v-if="reconnect.isError.value" class="block font-semibold">{{ $t('errors.reconnectFailed') }}</span>
         </span>
         <button
+          v-if="owned"
           type="button"
           class="inline-flex h-8 flex-none items-center gap-1 rounded-full bg-rose-600 px-3 text-xs font-semibold text-white disabled:opacity-60"
           :disabled="!bank || reconnect.isPending.value"
@@ -130,7 +135,7 @@ async function confirmRemove() {
         <AccountSettingsCard v-for="account in accounts" v-else :key="account._links.self.href" :account="account" />
       </section>
 
-      <section v-if="linked" class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="sync-title">
+      <section v-if="canSync" class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="sync-title">
         <h2 id="sync-title" class="text-[15px] font-semibold">{{ $t('sync.title') }}</h2>
         <p class="text-[13px] text-slate-600">
           <template v-if="syncing">{{ $t('sync.inProgress') }}</template>
@@ -151,7 +156,11 @@ async function confirmRemove() {
         </button>
       </section>
 
-      <section class="flex flex-col gap-2 rounded-2xl border border-rose-200 bg-white p-4" aria-labelledby="delete-title">
+      <p v-if="!owned" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-600">
+        {{ $t('connection.sharedByOther') }}
+      </p>
+
+      <section v-if="owned" class="flex flex-col gap-2 rounded-2xl border border-rose-200 bg-white p-4" aria-labelledby="delete-title">
         <h2 id="delete-title" class="text-[15px] font-semibold text-rose-700">{{ $t('connection.deleteTitle') }}</h2>
         <p class="text-[13px] text-slate-600">
           {{ $t('connection.deleteHint', { bank: bankName }) }}

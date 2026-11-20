@@ -7,15 +7,16 @@ const { t } = useI18n()
 const { data: connections, isPending, isError, refetch } = useConnectionsQuery()
 const { data: allAccounts } = useAllAccountsQuery()
 
-// Refresh button: sync every linked connection.
+// Refresh button: sync every linked connection the user may sync (their own: _links.sync).
+const syncable = computed(() => (connections.value ?? []).filter((c) => c.externalStatus === 'LN' && !!c._links.sync))
 const sync = useSyncConnection()
 const syncingAll = ref(false)
 async function syncAll() {
-  if (syncingAll.value || !connections.value) return
+  if (syncingAll.value || !syncable.value.length) return
   syncingAll.value = true
   try {
     await Promise.allSettled(
-      connections.value.filter((c) => c.externalStatus === 'LN').map((c) => sync.mutateAsync(halId(c))),
+      syncable.value.map((c) => sync.mutateAsync(halId(c))),
     )
   } finally {
     syncingAll.value = false
@@ -87,7 +88,7 @@ const setOpen = (id: string, value: boolean) => {
           type="button"
           class="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60"
           :aria-label="$t('home.syncAll')"
-          :disabled="syncingAll || !connections?.length"
+          :disabled="syncingAll || !syncable.length"
           @click="syncAll"
         >
           <RefreshCw class="size-5" :class="{ 'animate-spin': syncingAll }" />

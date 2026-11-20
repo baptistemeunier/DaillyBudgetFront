@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// The user's own categories (sub-categories of system roots) and saving envelopes: create, edit, delete.
+// The users' categories (sub-categories of system roots) and saving envelopes, shared by all the users:
+// create, edit, delete (only the owner deletes: the API gives _links.delete to them only).
 // System categories (with a code) are read-only and not listed as rows.
 import { Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import type { CategoryNode } from '~/utils/categories'
@@ -100,6 +101,7 @@ const deletingEnvelope = computed(() => toDelete.value?.type === 'saving')
             <component :is="child.icon" class="size-5 flex-none text-slate-500" aria-hidden="true" />
             <span class="min-w-0 flex-1 truncate text-[15px]">{{ child.label }}</span>
             <button
+              v-if="child.canEdit"
               type="button"
               class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
               :aria-label="$t('categorySettings.editNamed', { name: child.label })"
@@ -108,6 +110,7 @@ const deletingEnvelope = computed(() => toDelete.value?.type === 'saving')
               <Pencil class="size-4" />
             </button>
             <button
+              v-if="child.canDelete"
               type="button"
               class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-600"
               :aria-label="$t('categorySettings.deleteNamed', { name: child.label })"
@@ -148,6 +151,7 @@ const deletingEnvelope = computed(() => toDelete.value?.type === 'saving')
             </span>
           </span>
           <button
+            v-if="envelope.canEdit"
             type="button"
             class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
             :aria-label="$t('categorySettings.editNamed', { name: envelope.label })"
@@ -156,6 +160,7 @@ const deletingEnvelope = computed(() => toDelete.value?.type === 'saving')
             <Pencil class="size-4" />
           </button>
           <button
+            v-if="envelope.canDelete"
             type="button"
             class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-600"
             :aria-label="$t('categorySettings.deleteNamed', { name: envelope.label })"

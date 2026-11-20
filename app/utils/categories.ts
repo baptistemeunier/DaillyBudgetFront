@@ -31,6 +31,9 @@ export interface CategoryNode {
   /** Envelopes (saving categories) only. */
   targetAmount: string | null
   targetDate: string | null
+  /** From the API action links: everyone edits the users' categories, only their owner deletes them. */
+  canEdit: boolean
+  canDelete: boolean
 }
 
 export interface CategoryTree {
@@ -61,6 +64,8 @@ export function buildCategoryTree(categories: Category[], locale: AppLocale = 'f
       order: (c.code ? CATEGORY_ORDER.get(c.code) : undefined) ?? Number.MAX_SAFE_INTEGER,
       targetAmount: c.targetAmount ?? null,
       targetDate: c.targetDate ?? null,
+      canEdit: !!c._links.edit,
+      canDelete: !!c._links.delete,
     })
     if (c.code) iriByCode.set(c.code, iri)
   }

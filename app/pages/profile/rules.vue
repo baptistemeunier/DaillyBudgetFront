@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// The user's categorization rules ("always categorize like this"): create, edit, delete.
+// The categorization rules ("always categorize like this"), shared by all the users: create, edit, delete
+// (only the owner of a rule deletes it: the API gives _links.delete to them only).
 // Created here or from the "Toujours pour …" switch of CategorizeSheet.
 import { Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import type { CategorizationRule } from '~/types/api'
@@ -71,6 +72,7 @@ async function confirmDelete() {
             <Pencil class="size-4" />
           </button>
           <button
+            v-if="rule._links.delete"
             type="button"
             class="flex size-11 flex-none items-center justify-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-600"
             :aria-label="$t('rules.deleteNamed', { name: rule.pattern })"

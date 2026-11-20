@@ -130,6 +130,7 @@
     "noConnection": "No connection"
   },
   "connection": {
+    "sharedByOther": "Connection added by another member: only they can sync, reconnect or delete it.",
     "notFinalized": "This connection isn't finished.",
     "expired": "Bank access has expired.",
     "expiredFrozen": "Bank access has expired. Balances frozen on {date}.",
