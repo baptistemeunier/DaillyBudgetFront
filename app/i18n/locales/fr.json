@@ -406,7 +406,10 @@
     "balanceHint": "Le solde du compte à la date ci-dessous.",
     "balanceDate": "Solde à la date du",
     "history": "Historique",
-    "create": "Créer le compte"
+    "create": "Créer le compte",
+    "updateBalance": "Mettre à jour le solde",
+    "newBalance": "Nouveau solde",
+    "updateBalanceHint": "Le solde du compte à cette date. La différence est enregistrée comme un ajustement."
   },
   "rules": {
     "title": "Règles de catégorisation",

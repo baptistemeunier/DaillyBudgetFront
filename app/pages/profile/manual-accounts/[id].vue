@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Loader2, X } from 'lucide-vue-next'
+import { ChevronRight, Loader2, Pencil, X } from 'lucide-vue-next'
 import type { AccountType } from '~/types/api'
 
 const route = useRoute()
@@ -41,6 +41,9 @@ const balance = computed(() =>
     ? formatCents(toCents(account.value.balance), account.value.balanceCurrency ?? 'EUR')
     : null,
 )
+
+// New balance on a date (manual account the user may edit: _links.balance).
+const balanceOpen = ref(false)
 
 function close() {
   if (window.history.state?.back) router.back()
@@ -120,6 +123,18 @@ async function submit() {
           <span class="text-[13px] font-medium text-indigo-700">{{ $t('manualAccount.history') }}</span>
           <ChevronRight class="size-4 flex-none text-slate-400" aria-hidden="true" />
         </NuxtLink>
+
+        <template v-if="account._links.balance">
+          <button
+            type="button"
+            class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-[15px] font-semibold text-indigo-700 hover:bg-slate-50"
+            @click="balanceOpen = true"
+          >
+            <Pencil class="size-4" aria-hidden="true" />
+            {{ $t('manualAccount.updateBalance') }}
+          </button>
+          <BalanceSheet :account="account" :open="balanceOpen" @close="balanceOpen = false" />
+        </template>
       </template>
 
       <p v-if="update.isError.value" class="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">

@@ -53,7 +53,14 @@ export interface Account extends HalResource {
   manual?: boolean
   /** Checking account: BALANCE_LOW is sent when the balance goes below it (decimal); null = no alert. */
   lowBalanceThreshold?: string | null
-  _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink }
+  /** balance: POST a new balance, only for a manual account the user may edit. */
+  _links: HalResource['_links'] & { 'account-connection'?: HalLink; bank?: HalLink; balance?: HalLink }
+}
+
+/** POST /accounts/{id}/balance: the balance of a manual account on a date; the difference becomes an adjustment transaction. */
+export interface UpdateManualBalanceInput {
+  balance: string // decimal, e.g. "1050.00"
+  balanceAt: string // YYYY-MM-DD, not in the future
 }
 
 /** POST /accounts: manual account, starting with an initial transaction. */

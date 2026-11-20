@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/vue-query'
-import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, CategorizationRule, CategorizationRuleInput, Category, EnvelopeInput, HalCollection, Transaction, UserAction, UserActionType } from '~/types/api'
+import type { Account, AccountConnection, AccountType, CreateManualAccountInput, Bank, CategorizationRule, CategorizationRuleInput, Category, EnvelopeInput, HalCollection, Transaction, UpdateManualBalanceInput, UserAction, UserActionType } from '~/types/api'
 import type { AccountScope } from '~/utils/accounts'
 
 export function useConnectionsQuery() {
@@ -174,6 +174,23 @@ export function useCreateManualAccount() {
       queryClient.invalidateQueries({ queryKey: ['savings'] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['account'] })
+    },
+  })
+}
+
+/** Sets a manual account's balance on a date: the API saves the difference as an adjustment transaction. */
+export function useUpdateManualBalance() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ account, input }: { account: Account; input: UpdateManualBalanceInput }) =>
+      api<Account>(account._links.balance!.href, { method: 'POST', body: input }),
+    onSuccess: (_updated, { account }) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions', halId(account)] })
+      queryClient.invalidateQueries({ queryKey: ['savings'] })
+      queryClient.invalidateQueries({ queryKey: ['statement'] })
     },
   })
 }

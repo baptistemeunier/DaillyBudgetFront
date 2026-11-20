@@ -406,7 +406,10 @@
     "balanceHint": "The account balance on the date below.",
     "balanceDate": "Balance as of",
     "history": "History",
-    "create": "Create account"
+    "create": "Create account",
+    "updateBalance": "Update balance",
+    "newBalance": "New balance",
+    "updateBalanceHint": "The account balance on this date. The difference is saved as an adjustment."
   },
   "rules": {
     "title": "Categorization rules",
