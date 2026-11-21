@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { Bell, ChevronRight, Landmark, Tags, WandSparkles } from 'lucide-vue-next'
+import { Bell, ChevronRight, Landmark, LogOut, Tags, WandSparkles } from 'lucide-vue-next'
 
 const { locale, locales, setLocale } = useI18n()
+const auth = useAuth()
+const signingOut = ref(false)
+
+async function signOut() {
+  signingOut.value = true
+  await auth.logout()
+}
 </script>
 
 <template>
@@ -55,5 +62,15 @@ const { locale, locales, setLocale } = useI18n()
         </button>
       </div>
     </section>
+
+    <button
+      type="button"
+      class="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+      :disabled="signingOut"
+      @click="signOut"
+    >
+      <LogOut class="size-5 flex-none" aria-hidden="true" />
+      {{ $t('profile.signOut') }}
+    </button>
   </main>
 </template>

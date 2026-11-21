@@ -23,7 +23,9 @@ The app uses the [Daily Budget API](../dailyBudget).
 - `@vite-pwa/nuxt` with a custom service worker (`service-worker/sw.ts`) that handles Web Push
 - MSW for API mocking
 
-The Nitro server (`server/`) does two things: it proxies `/api/**` to the API, and it exchanges the OAuth code for a token. Because of that, the client secret never reaches the browser.
+The Nitro server (`server/`) does two things: it proxies `/api/**` to the API, and it runs the OAuth login against Authelia (`server/api/auth/*`): authorization code with PKCE S256, as a public client with no secret. The PKCE verifier and the refresh token stay in httpOnly cookies; the browser only keeps the access token, which it sends to the API as `Authorization: Bearer`.
+
+Authelia must list the exact callback URL (`https://<front host>/auth/callback`) in the `redirect_uris` of the `dailybudget` client.
 
 ## Getting started
 
@@ -38,9 +40,11 @@ npm run dev             # http://localhost:3000
 | Variable | Purpose |
 |---|---|
 | `NUXT_API_BASE_URL` | API URL (server only) |
-| `NUXT_OAUTH_TOKEN_URL`, `NUXT_OAUTH_CLIENT_SECRET` | OAuth token endpoint and client secret (server only) |
-| `NUXT_PUBLIC_OAUTH_CLIENT_ID` | OAuth client id |
-| `NUXT_PUBLIC_OAUTH_AUTHORIZE_URL` | OAuth authorize URL |
+| `NUXT_OAUTH_TOKEN_URL` | Authelia token endpoint (server only) |
+| `NUXT_OAUTH_REVOCATION_URL` | Authelia revocation endpoint, used on logout (server only) |
+| `NUXT_PUBLIC_OAUTH_CLIENT_ID` | OAuth client id (`dailybudget`) |
+| `NUXT_PUBLIC_OAUTH_AUTHORIZE_URL` | Authelia authorization endpoint |
+| `NUXT_PUBLIC_OAUTH_LOGOUT_URL` | Authelia portal logout, opened after sign-out |
 | `NUXT_PUBLIC_VAPID_PUBLIC_KEY` | VAPID public key of the API (Web Push) |
 | `NUXT_PUBLIC_API_MOCKING` | `true` to use the mocked API (MSW) instead of the real one |
 

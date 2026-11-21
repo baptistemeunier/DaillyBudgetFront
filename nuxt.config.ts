@@ -83,18 +83,22 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Server only — overridden by NUXT_API_BASE_URL, NUXT_OAUTH_TOKEN_URL, NUXT_OAUTH_CLIENT_SECRET
+    // Server only — overridden by NUXT_API_BASE_URL, NUXT_OAUTH_TOKEN_URL, NUXT_OAUTH_REVOCATION_URL
     apiBaseUrl: 'http://192.168.50.12:8000',
-    oauthTokenUrl: 'http://192.168.50.12:8000/oauth/token',
-    oauthClientSecret: '',
+    // Authelia, public client (PKCE, no secret): see server/api/auth
+    oauthTokenUrl: 'https://auth.home.meunier.ovh/api/oidc/token',
+    oauthRevocationUrl: 'https://auth.home.meunier.ovh/api/oidc/revocation',
 
     public: {
       // Overridden by NUXT_PUBLIC_*
-      oauthClientId: '',
+      oauthClientId: 'dailybudget',
       // Web Push: public VAPID key of the API (not a secret), base64url — NUXT_PUBLIC_VAPID_PUBLIC_KEY
       vapidPublicKey: '',
-      oauthAuthorizeUrl: 'https://auth.meunier.ovh/oauth/authorize',
-      oauthScope: 'account_connection:write account:write category:write budget:write',
+      oauthAuthorizeUrl: 'https://auth.home.meunier.ovh/api/oidc/authorization',
+      // Authelia portal logout, after the refresh token is revoked — NUXT_PUBLIC_OAUTH_LOGOUT_URL
+      oauthLogoutUrl: 'https://auth.home.meunier.ovh/logout',
+      // offline_access: without it, Authelia delivers no refresh token
+      oauthScope: 'openid offline_access account_connection:write account:write category:write budget:write',
       apiMocking: false,
     },
   },

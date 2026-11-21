@@ -1,135 +1,92 @@
-// OAuth2 Authorization Code + PKCE (S256). Token exchange goes through /api/oauth/token.
+// OAuth2 Authorization Code + PKCE (S256) against Authelia, run by the Nitro server (server/api/auth/*):
+// it keeps the PKCE verifier and the refresh token in httpOnly cookies. The browser only keeps the
+// short-lived access token, and asks /api/auth/refresh for a new one (cookie) when it expires.
 
 interface Tokens {
   accessToken: string
-  refreshToken: string | null
   expiresAt: number // epoch ms
 }
 
 interface TokenResponse {
   access_token: string
-  refresh_token?: string
-  expires_in?: number
+  expires_in: number
 }
 
-const TOKENS_KEY = 'auth.tokens'
-const PKCE_KEY = 'auth.pkce'
+const TOKENS_KEY = 'auth.access'
+// Before Authelia, the refresh token was kept here: drop it.
+const LEGACY_TOKENS_KEY = 'auth.tokens'
 const EXPIRY_MARGIN_MS = 30_000
 
-function storageGet<T>(storage: () => Storage, key: string): T | null {
+function loadTokens(): Tokens | null {
   try {
-    const raw = storage().getItem(key)
-    return raw ? (JSON.parse(raw) as T) : null
+    localStorage.removeItem(LEGACY_TOKENS_KEY)
+    const raw = localStorage.getItem(TOKENS_KEY)
+    return raw ? (JSON.parse(raw) as Tokens) : null
   } catch {
     return null
   }
 }
 
-function storageSet(storage: () => Storage, key: string, value: unknown) {
+function storeTokens(value: Tokens | null) {
   try {
-    if (value === null) storage().removeItem(key)
-    else storage().setItem(key, JSON.stringify(value))
+    if (value === null) localStorage.removeItem(TOKENS_KEY)
+    else localStorage.setItem(TOKENS_KEY, JSON.stringify(value))
   } catch {
-    // storage unavailable: tokens stay in memory only
+    // storage unavailable: the token stays in memory only
   }
-}
-
-const local = () => window.localStorage
-const session = () => window.sessionStorage
-
-function base64Url(bytes: ArrayBuffer | Uint8Array) {
-  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
-  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-function randomString(byteLength = 32) {
-  return base64Url(crypto.getRandomValues(new Uint8Array(byteLength)))
-}
-
-async function pkceChallenge(verifier: string) {
-  return base64Url(await sha256(verifier))
-}
-
-function redirectUri() {
-  return `${window.location.origin}/auth/callback`
 }
 
 let refreshing: Promise<string | null> | null = null
 
 export function useAuth() {
-  const tokens = useState<Tokens | null>('auth.tokens', () => storageGet<Tokens>(local, TOKENS_KEY))
+  const tokens = useState<Tokens | null>('auth.tokens', loadTokens)
   const config = useRuntimeConfig().public
 
   const isAuthenticated = computed(() => tokens.value !== null)
 
   function saveTokens(res: TokenResponse) {
-    tokens.value = {
-      accessToken: res.access_token,
-      refreshToken: res.refresh_token ?? tokens.value?.refreshToken ?? null,
-      expiresAt: Date.now() + (res.expires_in ?? 3600) * 1000,
-    }
-    storageSet(local, TOKENS_KEY, tokens.value)
+    tokens.value = { accessToken: res.access_token, expiresAt: Date.now() + res.expires_in * 1000 }
+    storeTokens(tokens.value)
+  }
+
+  /** Forgets the access token in this browser (the refresh token cookie is left alone). */
+  function clearSession() {
+    tokens.value = null
+    storeTokens(null)
   }
 
   async function login(returnTo = '/') {
-    const verifier = randomString(48)
-    const state = randomString(16)
-    storageSet(session, PKCE_KEY, { verifier, state, returnTo })
-
-    const url = new URL(config.oauthAuthorizeUrl)
-    url.search = new URLSearchParams({
-      response_type: 'code',
-      client_id: config.oauthClientId,
-      redirect_uri: redirectUri(),
-      scope: config.oauthScope,
-      state,
-      code_challenge: await pkceChallenge(verifier),
-      code_challenge_method: 'S256',
-    }).toString()
-
-    window.location.assign(url.toString())
+    const { url } = await $fetch<{ url: string }>('/api/auth/login', {
+      method: 'POST',
+      body: { redirectUri: `${window.location.origin}/auth/callback`, returnTo },
+    })
+    window.location.assign(url)
   }
 
   /** Exchanges the authorization code; returns the path to go back to. */
   async function handleCallback(code: string, state: string): Promise<string> {
-    const pkce = storageGet<{ verifier: string; state: string; returnTo: string }>(session, PKCE_KEY)
-    storageSet(session, PKCE_KEY, null)
-
-    if (!pkce || pkce.state !== state) throw new Error(i18nT('errors.oauthState'))
-
-    const res = await $fetch<TokenResponse>('/api/oauth/token', {
-      method: 'POST',
-      body: {
-        grant_type: 'authorization_code',
-        code,
-        code_verifier: pkce.verifier,
-        redirect_uri: redirectUri(),
-      },
-    })
+    let res: TokenResponse & { return_to: string }
+    try {
+      res = await $fetch<TokenResponse & { return_to: string }>('/api/auth/callback', { method: 'POST', body: { code, state } })
+    } catch (e) {
+      const invalidState = (e as { statusMessage?: string }).statusMessage === 'invalid_state'
+      throw new Error(i18nT(invalidState ? 'errors.oauthState' : 'auth.failed'))
+    }
     saveTokens(res)
-
-    return pkce.returnTo.startsWith('/') ? pkce.returnTo : '/'
+    return res.return_to
   }
 
+  /** New access token from the refresh token cookie, or null if the user must log in again. */
   async function refresh(): Promise<string | null> {
-    const refreshToken = tokens.value?.refreshToken
-    // Expired without a way to renew it: forget it, or isAuthenticated stays true and every page
-    // (the OAuth callback included) sends back to the login, cutting the code exchange in progress.
-    if (!refreshToken) {
-      logout()
-      return null
-    }
-
-    refreshing ??= $fetch<TokenResponse>('/api/oauth/token', {
-      method: 'POST',
-      body: { grant_type: 'refresh_token', refresh_token: refreshToken },
-    })
+    refreshing ??= $fetch<TokenResponse>('/api/auth/refresh', { method: 'POST' })
       .then((res) => {
         saveTokens(res)
         return res.access_token
       })
       .catch(() => {
-        logout()
+        // Forget the token, or isAuthenticated stays true and every page (the OAuth callback
+        // included) sends back to the login, cutting the code exchange in progress.
+        clearSession()
         return null
       })
       .finally(() => {
@@ -142,15 +99,20 @@ export function useAuth() {
   /** Valid access token (refreshed if needed), or null if the user must log in again. */
   async function getAccessToken(): Promise<string | null> {
     const t = tokens.value
-    if (!t) return null
-    if (t.expiresAt - EXPIRY_MARGIN_MS > Date.now()) return t.accessToken
+    if (t && t.expiresAt - EXPIRY_MARGIN_MS > Date.now()) return t.accessToken
     return refresh()
   }
 
-  function logout() {
-    tokens.value = null
-    storageSet(local, TOKENS_KEY, null)
+  /** Ends the session: revokes the refresh token, then closes the Authelia session. */
+  async function logout() {
+    clearSession()
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // The cookie may still be there, Authelia's logout below closes the session anyway
+    }
+    window.location.assign(config.oauthLogoutUrl)
   }
 
-  return { isAuthenticated, login, handleCallback, getAccessToken, refresh, logout }
+  return { isAuthenticated, login, handleCallback, getAccessToken, refresh, clearSession, logout }
 }

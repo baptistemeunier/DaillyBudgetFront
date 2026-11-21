@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Sign-in goes through Authelia (auth.home.meunier.ovh) as a public client with PKCE, without a client secret.
+- The refresh token is kept in an httpOnly cookie instead of the browser storage.
+
+### Added
+- A sign-out button on the profile page. It revokes the refresh token and closes the Authelia session.
+
 ## [0.1.0] - 2026-11-20
 
 First release.

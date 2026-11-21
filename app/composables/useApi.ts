@@ -33,7 +33,7 @@ export function useApi() {
         return api<T>(path, opts, true)
       }
       if (status === 401) {
-        auth.logout()
+        auth.clearSession()
         await relogin()
       }
       throw err

@@ -367,7 +367,8 @@
     "addManualAccount": "Ajouter un compte manuel",
     "customCategories": "Catégories et enveloppes",
     "rules": "Règles de catégorisation",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "signOut": "Se déconnecter"
   },
   "categorySettings": {
     "title": "Catégories et enveloppes",
